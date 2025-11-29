@@ -5,31 +5,33 @@
 #include "spacer_losowy.h"
 
 __host__ std::string do_bin(const double& X) {
-	char buff[100];
+	constexpr int ile_miejsca = 50;
+	char buff[ile_miejsca];
 	if (X == 0.0) {
-		ASSERT_Z_ERROR_MSG(std::sprintf(buff, "%.1lf", X) < 100, "Za malo miejsca w bufforze\n");
+		ASSERT_Z_ERROR_MSG(std::sprintf(buff, "%.1lf", X) < ile_miejsca, "Za malo miejsca w bufforze\n");
 	}
 	else {
-		ASSERT_Z_ERROR_MSG(std::sprintf(buff, "%.17lf", X) < 100, "Za malo miejsca w bufforze\n");
+		ASSERT_Z_ERROR_MSG(std::sprintf(buff, "%.17lf", X) < ile_miejsca, "Za malo miejsca w bufforze\n");
 	}
 	return buff;
 }
 
 __host__ std::string do_bin(const zesp& X) {
-	char buff[100];
+	constexpr int ile_miejsca = 100;
+	char buff[ile_miejsca];
 	if (X.Re == 0.0 && X.Im == 0.0) {
-		ASSERT_Z_ERROR_MSG(std::sprintf(buff, "%.1lf + i%.1lf", X.Re, X.Im) < 100, "Za malo miejsca w bufforze\n");
+		ASSERT_Z_ERROR_MSG(std::sprintf(buff, "%.1lf + i%.1lf", X.Re, X.Im) < ile_miejsca, "Za malo miejsca w bufforze\n");
 	}
 	else {
 		if (X.Re == 0.0) {
-			ASSERT_Z_ERROR_MSG(std::sprintf(buff, "%.1lf + i%.17lf", X.Re, X.Im) < 100, "Za malo miejsca w bufforze\n");
+			ASSERT_Z_ERROR_MSG(std::sprintf(buff, "%.1lf + i%.17lf", X.Re, X.Im) < ile_miejsca, "Za malo miejsca w bufforze\n");
 		}
 		else {
 			if (X.Im == 0.0) {
-				ASSERT_Z_ERROR_MSG(std::sprintf(buff, "%.17lf + i%.1lf", X.Re, X.Im) < 100, "Za malo miejsca w bufforze\n");
+				ASSERT_Z_ERROR_MSG(std::sprintf(buff, "%.17lf + i%.1lf", X.Re, X.Im) < ile_miejsca, "Za malo miejsca w bufforze\n");
 			}
 			else {
-				ASSERT_Z_ERROR_MSG(std::sprintf(buff, "%.17lf + i%.17lf", X.Re, X.Im) < 100, "Za malo miejsca w bufforze\n");
+				ASSERT_Z_ERROR_MSG(std::sprintf(buff, "%.17lf + i%.17lf", X.Re, X.Im) < ile_miejsca, "Za malo miejsca w bufforze\n");
 			}
 		}
 	}

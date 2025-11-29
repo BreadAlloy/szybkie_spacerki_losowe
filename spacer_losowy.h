@@ -94,7 +94,11 @@ struct dane_trwale{ //operatory, to gdzie wysy³aæ, przestrzen, raczej nie zmieni
 		}
 	}
 
-	__host__ uint64_t ile_watkow(){
+	__host__ uint64_t ile_watkow(uint64_t ile_prac_na_watek){
+		return (ile_prac() / ile_prac_na_watek) + 1;
+	}
+
+	__host__ uint64_t ile_prac(){
 		return znajdywacz_wierzcholka[znajdywacz_wierzcholka.rozmiar - 1];
 	}
 
@@ -123,26 +127,46 @@ struct dane_trwale{ //operatory, to gdzie wysy³aæ, przestrzen, raczej nie zmieni
 		}
 	}
 
-	__host__ void przeslij_na_cuda(dane_trwale* na_cudzie, cudaStream_t stream){
-		//przenies_na_cuda(na_cudzie->gdzie_wyslac, gdzie_wyslac);
-		//przenies_na_cuda(na_cudzie->wierzcholki, wierzcholki);
-		//przenies_na_cuda(na_cudzie->znajdywacz_wierzcholka, znajdywacz_wierzcholka);
-		//przenies_na_cuda(na_cudzie->transformaty, transformaty);
+	__host__ void zbuduj_na_cuda(cudaStream_t stream){
+		gdzie_wyslac.cuda_malloc();
+		gdzie_wyslac.cuda_zanies(stream);
 
-		//checkCudaErrors(cudaMemcpyAsync((void*)lokalizacja_na_cuda, (void*)na_cudzie, sizeof(dane_trwale), cudaMemcpyHostToDevice, stream));
+		wierzcholki.cuda_malloc();
+		wierzcholki.cuda_zanies(stream);
+
+		znajdywacz_wierzcholka.cuda_malloc();
+		znajdywacz_wierzcholka.cuda_zanies(stream);
+
+		for(uint64_t i = 0; i < transformaty.rozmiar; i++){
+			transformaty[i].cuda_malloc();
+			transformaty[i].cuda_zanies(stream);
+		}
+
+		transformaty.cuda_malloc();
+		transformaty.cuda_zanies(stream);
+	}
+
+	__host__ void zburz_na_cuda(){
+		gdzie_wyslac.cuda_free();
+		wierzcholki.cuda_free();
+		znajdywacz_wierzcholka.cuda_free();
+
+		for (uint64_t i = 0; i < transformaty.rozmiar; i++) {
+			transformaty[i].cuda_free();
+		}
+		transformaty.cuda_free();
 	}
 
 	__HD__ uint64_t liczba_wierzcholkow(){
 		return wierzcholki.rozmiar;
 	}
 
-	__HD__ uint64_t znajdz_wierzcholek(uint64_t index_watka) {
+	__HD__ uint64_t znajdz_wierzcholek(uint64_t index_watka, uint64_t cache = 0) {
 		// zwraca index szukanego wierzcho³ka
-		for (uint64_t i = 0; i < znajdywacz_wierzcholka.rozmiar; i++) {
+		for (uint64_t i = cache; i < znajdywacz_wierzcholka.rozmiar; i++) {
 			if (index_watka < znajdywacz_wierzcholka[i]) return i;
 		}
-		ASSERT_Z_ERROR_MSG(false, "Nie znaleziono wierzcholka?!?!?!?\n");
-		return (uint64_t)-1;
+		return (uint64_t)-1; // nie znaleziono wierzcholka
 	}
 	
 	__host__ bool czy_gotowy(){
@@ -183,6 +207,22 @@ struct dane_iteracji{
 	__HD__ towar operator[](uint64_t index) const {
 		return wartosci[index];
 	}
+
+	__host__ void cuda_malloc(){
+		wartosci.cuda_malloc();
+	}
+
+	__host__ void cuda_zanies(cudaStream_t stream){
+		wartosci.cuda_zanies(stream);
+	}
+
+	__host__ void cuda_przynies(cudaStream_t stream){
+		wartosci.cuda_przynies(stream);
+	}
+
+	__host__ void cuda_free(){
+		wartosci.cuda_free();
+	}
 };
 
 };
@@ -193,8 +233,6 @@ __HD__ void testy_macierzy();
 // transformata ma miec pola: arrnosc, ile_watkow, i metode transformuj(index_watka)
 template<typename towar, typename transformata>
 struct spacer_losowy{
-	spacer::dane_trwale<transformata> trwale;
-
 	// Normalnie wartosci sa przerzucane:
 	//iteracja:  1   |  2   |  3   |  4   |  5
 	//			A->B | B->A | A->B | B->A | A->B
@@ -203,9 +241,15 @@ struct spacer_losowy{
 	bool A = true; // true oznacza ze iteracjaA bedzie z a iteracjaB bedzie do
 	spacer::dane_iteracji<towar> iteracjaA;
 	spacer::dane_iteracji<towar> iteracjaB;
-	wektor_do_pusbackowania<spacer::dane_iteracji<towar>*> iteracje_zapamietane; //iteracje_zapamietane[0] to stan poszatkowy
 
-	//zmienna_miedzy_HD<spacer_losowy> translator;
+//               Pola zmienne na cudzie
+//------------------------------------------
+//				 Pola stale na cudzie
+	wektor_do_pusbackowania<spacer::dane_iteracji<towar>*> iteracje_zapamietane; //iteracje_zapamietane[0] to stan poszatkowy
+	spacer::dane_trwale<transformata> trwale;
+
+	spacer_losowy* lokalizacja_na_device = nullptr;
+	cudaStream_t stream = 0;
 
 	__host__ spacer_losowy(const graf& przestrzen, uint32_t max_iteracji_zapamietanych = 30000)
 	: trwale(przestrzen), iteracjaA(0), iteracjaB(0), iteracje_zapamietane(max_iteracji_zapamietanych){}
@@ -265,7 +309,7 @@ struct spacer_losowy{
 		}
 	}
 
-	__host__ void dokoncz_iteracje(double dt){
+	__HD__ void dokoncz_iteracje(double dt){
 		if(A){
 			iteracjaB.czas = iteracjaA.czas + dt;
 		} else {
@@ -278,13 +322,53 @@ struct spacer_losowy{
 		for(uint64_t i = 0; i < iteracje_zapamietane.rozmiar; i++){
 			delete (iteracje_zapamietane[i]);
 		}
+		if(lokalizacja_na_device != nullptr) zburz_na_cuda();
 	}
 
-	__host__ void wyslij_na_cuda(){
-		//ASSERT_Z_ERROR_MSG(lokalizacja_na_cuda == nullptr, "Juz jest na cudzie");
-		//checkCudaErrors(cudaMalloc(reinterpret_cast<void**>(lokalizacja_na_cuda), sizeof(spacer_losowy)));
+	__host__ void zbuduj_na_cuda(){
+		ASSERT_Z_ERROR_MSG(lokalizacja_na_device == nullptr, "Juz jest na cudzie\n");
 
-		spacer_losowy na_cudzie;
+		checkCudaErrors(cudaStreamCreateWithFlags(&stream, cudaStreamNonBlocking));
+
+		checkCudaErrors(cudaMalloc(reinterpret_cast<void**>(&lokalizacja_na_device), sizeof(spacer_losowy)));
+
+		trwale.zbuduj_na_cuda(stream);
+
+		iteracjaA.cuda_malloc();
+		iteracjaA.cuda_zanies(stream);
+
+		iteracjaB.cuda_malloc();
+		iteracjaB.cuda_zanies(stream);
+
+		checkCudaErrors(cudaMemcpyAsync((void*)lokalizacja_na_device, (void*)this, sizeof(spacer_losowy), cudaMemcpyHostToDevice, stream));
+
+		checkCudaErrors(cudaStreamSynchronize(stream));
+	}
+
+	__host__ void cuda_przynies(){
+		ASSERT_Z_ERROR_MSG(lokalizacja_na_device != nullptr, "Nie ma nic na cudzie\n");
+		iteracjaA.cuda_przynies(stream);
+		iteracjaB.cuda_przynies(stream);
+
+		// g³ównie po to aby czasy iteracji by³y przepisane
+		checkCudaErrors(cudaMemcpyAsync((void*)this, (void*)lokalizacja_na_device, offsetof(spacer_losowy, iteracje_zapamietane), cudaMemcpyDeviceToHost, stream));
+
+		checkCudaErrors(cudaStreamSynchronize(stream));
+	}
+
+	__host__ void zburz_na_cuda(){
+		ASSERT_Z_ERROR_MSG(lokalizacja_na_device != nullptr, "Nie ma nic na cudzie\n");
+
+		trwale.zburz_na_cuda();
+
+		iteracjaA.cuda_free();
+		iteracjaB.cuda_free();
+
+		checkCudaErrors(cudaFree(lokalizacja_na_device));
+		lokalizacja_na_device = nullptr;
+
+		checkCudaErrors(cudaStreamDestroy(stream));
+		stream = 0;
 	}
 
 	//__HD__ virtual void mala_praca(statyczny_wektor<towar>& docelowy, uint64_t index_watka){
@@ -328,3 +412,12 @@ __host__ void test_funkcji_tworzacych_spacery_2(transformata srodek, transformat
 
 //template __host__ spacer::uklad_transformat<transformata_macierz<double>> uklad_transformat_dla_lini<transformata_macierz<double>>(uint32_t liczba_wierzcholkow, transformata_macierz<double>& srodek, transformata_macierz<double>& koniec);
 
+template <typename towar, typename transformata>
+__global__ void iteracje_na_gpu(spacer_losowy<towar, transformata>* lokalizacja_na_device, uint64_t ile_blokow, uint64_t liczba_iteracji = 1, uint64_t ile_prac_wykonac = 1);
+
+template <typename towar, typename transformata>
+__host__ void symulowana_iteracja_na_gpu(spacer_losowy<towar, transformata>* lokalizacja_na_device, uint64_t threadIdx);
+
+template <typename towar, typename transformata>
+__host__ void iteruj_na_gpu(spacer_losowy<towar, transformata>& spacer,
+	uint64_t liczba_iteracji = 1);

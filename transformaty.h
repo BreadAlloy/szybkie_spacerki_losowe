@@ -60,8 +60,8 @@ struct transformata_macierz {
 
 	__HD__ transformata_macierz(uint8_t arrnosc, towar* zawartosc) :
 		transformata_macierz(arrnosc) {
-		void* res = memcpy(macierz.pamiec, zawartosc, sizeof(towar) * ile_elementow());
-		ASSERT_Z_ERROR_MSG(this->macierz.pamiec == res, "malloc nie zadzialal\n");
+		void* res = memcpy(macierz.PAMIEC, zawartosc, macierz.bajt_rozmiar());
+		ASSERT_Z_ERROR_MSG(this->macierz.PAMIEC == res, "malloc nie zadzialal\n");
 		sprawdz();
 	}
 
@@ -123,6 +123,19 @@ struct transformata_macierz {
 		lepszy_assert(column < arrnosc);
 		return macierz[(uint32_t)row * (uint32_t)arrnosc + (uint32_t)column];
 	}
+	
+	__host__ void cuda_malloc(){
+		macierz.cuda_malloc();
+	}
+
+	__host__ void cuda_zanies(cudaStream_t stream) {
+		macierz.cuda_zanies(stream);
+	}
+
+	__host__ void cuda_free(){
+		macierz.cuda_free();
+	}
+
 };
 
 

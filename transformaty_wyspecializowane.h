@@ -12,7 +12,7 @@ struct transformata_macierz_dyskretna_klasyczna : transformata_macierz<double>{
 	transformata_macierz_dyskretna_klasyczna(transformata_macierz<double> M)
 	: transformata_macierz<double>(M){}
 
-	__host__ void transformuj(spacer::dane_trwale<TMDK>& trwale, const spacer::wierzcholek& wierzcholek,
+	__HD__ void transformuj(spacer::dane_trwale<TMDK>& trwale, const spacer::wierzcholek& wierzcholek,
 		spacer::dane_iteracji<double>& iteracja_z, spacer::dane_iteracji<double>& iteracja_do, uint64_t index_w_wierzcholku)
 	{
 		TMDK& transformata = trwale.transformaty[wierzcholek.transformer];
@@ -24,14 +24,13 @@ struct transformata_macierz_dyskretna_klasyczna : transformata_macierz<double>{
 
 typedef transformata_macierz_dyskretna_klasyczna TMDK;
 
-
 struct transformata_macierz_dyskretna_kwantowa : transformata_macierz<zesp> {
 	typedef transformata_macierz_dyskretna_kwantowa TMDQ;
 
 	transformata_macierz_dyskretna_kwantowa(transformata_macierz<zesp> M)
 		: transformata_macierz<zesp>(M) {}
 
-	__host__ void transformuj(spacer::dane_trwale<TMDQ>& trwale, const spacer::wierzcholek& wierzcholek,
+	__HD__ void transformuj(spacer::dane_trwale<TMDQ>& trwale, const spacer::wierzcholek& wierzcholek,
 		spacer::dane_iteracji<zesp>& iteracja_z, spacer::dane_iteracji<zesp>& iteracja_do, uint64_t index_w_wierzcholku)
 	{
 		TMDQ& transformata = trwale.transformaty[wierzcholek.transformer];

@@ -20,9 +20,9 @@
 #endif
 
 #ifdef __CUDA_ARCH__
-#define IF_HD(X, Y) X
-#else
 #define IF_HD(X, Y) Y
+#else
+#define IF_HD(X, Y) X
 #endif
 
 #ifdef __CUDA_ARCH__

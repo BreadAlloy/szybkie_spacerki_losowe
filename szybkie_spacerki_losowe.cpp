@@ -23,11 +23,13 @@ int main(int ccc, char** aaa)
 {
     //assert(false);
     /*        Test czy CUDA dzia³a          */
-    //int mmmmain(int argc, char** argv);
-    //mmmmain(ccc, aaa);
+    int mmmmain(int argc, char** argv);
+    mmmmain(ccc, aaa);
     //printf("dddddddddd%s%d%s\n");
     //std::cout << "Test%s%s%s\n";
     /*        Test czy CUDA dzia³a          */
+
+    cuda_tester();
 
     static_assert(sizeof(void*) == 8, "Powinno byc 8 bytow w pointerze");
 
@@ -38,6 +40,7 @@ int main(int ccc, char** aaa)
 
     test_spaceru_klasyczny_dyskretny TSKD;
     test_spaceru_kwantowy_dyskretny TSQD;
+    test_spaceru_kwantowy_dyskretny_gpu TSQDG;
 
     while (!glfwWindowShouldClose(window))
     {
@@ -60,6 +63,7 @@ int main(int ccc, char** aaa)
 
         TSKD.pokaz_okno(*io);
         TSQD.pokaz_okno(*io);
+        TSQDG.pokaz_okno(*io);
 
         //processInput(window); // z grafiki
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // czesciowo z grafiki

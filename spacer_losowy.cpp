@@ -140,24 +140,6 @@ template __host__ void test_funkcji_tworzacych_spacery_2<double, TMDK>(TMDK srod
 
 template __host__ void test_funkcji_tworzacych_spacery<double, TMDK>(TMDK srodek, TMDK konce);
 
-__HD__ double dot(const estetyczny_wektor<double>& a, const estetyczny_wektor<double>& b) {
-	ASSERT_Z_ERROR_MSG(a.rozmiar == b.rozmiar, "Dot product na innej ilosci elementow\n");
-	double sum = zero(double());
-	for (uint64_t i = 0; i < a.rozmiar; i++) {
-		sum += (a[i] * b[i]);
-	}
-	return sum;
-}
-
-__HD__ zesp dot(const estetyczny_wektor<zesp>& a, const estetyczny_wektor<zesp>& b) {
-	ASSERT_Z_ERROR_MSG(a.rozmiar == b.rozmiar, "Dot product na innej ilosci elementow\n");
-	zesp sum = zero(zesp());
-	for (uint64_t i = 0; i < a.rozmiar; i++) {
-		sum += (a[i].sprzezenie() * b[i]);
-	}
-	return sum;
-}
-
 //void test4(){}
 
 //template __host__ spacer::uklad_transformat<transformata_macierz<double>> uklad_transformat_dla_lini<transformata_macierz<double>>(uint32_t liczba_wierzcholkow, transformata_macierz<double>& srodek, transformata_macierz<double>& koniec);

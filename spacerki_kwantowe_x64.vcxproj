@@ -204,7 +204,7 @@
     <CudaCompile>
       <AdditionalDeps>
       </AdditionalDeps>
-      <AdditionalOptions>-Wno-deprecated-gpu-targets --std c++20 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>-Wno-deprecated-gpu-targets --std c++20 -Xptxas -v %(AdditionalOptions)</AdditionalOptions>
     </CudaCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -236,7 +236,7 @@
       <AdditionalDependencies>opengl32.lib;$(SolutionDir)dependencies\freeglut\lib\x64\freeglut.lib;$(SolutionDir)dependencies\glew-2.0.0\lib\Release\x64\glew32.lib;$(SolutionDir)dependencies\glfw-3.3.8.bin.WIN64\lib-vc2022\glfw3.lib;$(SolutionDir)dependencies\glfw-3.3.8.bin.WIN64\lib-vc2022\glfw3dll.lib;$(SolutionDir)dependencies\assimp\x64\lib\Release\assimp-vc143-mt.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <CudaCompile>
-      <AdditionalOptions>-Wno-deprecated-gpu-targets --std c++20 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>-Wno-deprecated-gpu-targets --std c++20 -Xptxas -v %(AdditionalOptions)</AdditionalOptions>
     </CudaCompile>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

@@ -17,6 +17,7 @@
 #include "spacer_losowy.h"
 
 
+
 //__HD__ void testy_macierzy() {
 //    transformata_macierz<double> t1(1.0);
 //    transformata_macierz<double> t2(0.75, 0.5, 0.25, 0.5);
