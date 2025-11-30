@@ -120,7 +120,7 @@ __host__ void iteruj_na_gpu(spacer_losowy<towar, transformata>& spacer,
 
 	//spacer.trwale.ile_watkow(10)
 	uint64_t ile_prac = spacer.trwale.ile_prac();
-	constexpr int max_ilosc_watkow_w_bloku = 512;
+	constexpr int max_ilosc_watkow_w_bloku = 100;
 	uint64_t ile_prac_na_watek = ile_prac / max_ilosc_watkow_w_bloku + 1;
 	iteracje_na_gpu<towar, transformata><<<1, max_ilosc_watkow_w_bloku, 0, spacer.stream>>>(spacer.lokalizacja_na_device, 1, liczba_iteracji, ile_prac_na_watek);
 	checkCudaErrors(cudaStreamSynchronize(spacer.stream));

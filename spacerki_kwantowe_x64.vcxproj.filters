@@ -108,6 +108,9 @@
     <ClCompile Include="zesp.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="grafika.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="imgui\imconfig.h">

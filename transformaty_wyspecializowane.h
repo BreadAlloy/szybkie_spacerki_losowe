@@ -41,3 +41,27 @@ struct transformata_macierz_dyskretna_kwantowa : transformata_macierz<zesp> {
 };
 
 typedef transformata_macierz_dyskretna_kwantowa TMDQ;
+
+
+constexpr double dt = 0.000001;
+
+struct transformata_macierz_ciagla_kwantowa : transformata_macierz<zesp> {
+	typedef transformata_macierz_ciagla_kwantowa TMCQ;
+
+	const zesp schrodinger = zesp(0.0, -1.0) * dt;
+
+	transformata_macierz_ciagla_kwantowa(transformata_macierz<zesp> M)
+		: transformata_macierz<zesp>(M) {}
+
+	__HD__ void transformuj(spacer::dane_trwale<TMCQ>& trwale, const spacer::wierzcholek& wierzcholek,
+		spacer::dane_iteracji<zesp>& iteracja_z, spacer::dane_iteracji<zesp>& iteracja_do, uint64_t index_w_wierzcholku)
+	{
+		TMCQ& transformata = trwale.transformaty[wierzcholek.transformer];
+		estetyczny_wektor<zesp> a(&(iteracja_z[wierzcholek.start_wartosci]), wierzcholek.liczba_kierunkow);
+		estetyczny_wektor<zesp> b(&(transformata((uint8_t)index_w_wierzcholku, 0)), transformata.arrnosc);
+		uint64_t offset_do = trwale.gdzie_wyslac[wierzcholek.start_wartosci + index_w_wierzcholku];
+		iteracja_do[offset_do] = iteracja_z[offset_do] + schrodinger * dot(b, a);
+	}
+};
+
+typedef transformata_macierz_ciagla_kwantowa TMCQ;

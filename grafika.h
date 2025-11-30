@@ -1,11 +1,16 @@
 #pragma once
 
+#pragma warning(push, 0)
+// Nie chce widzieæ losowych warningow z grafiki komputerowaej
+
 #include "src/SOIL/SOIL.h"
 #include "glew.h"
 
 #include <GLFW/glfw3.h>
 #include "glm.hpp"
 #include "ext.hpp"
+
+#pragma warning(pop)
 
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
@@ -112,3 +117,12 @@ struct grafika {
         LoadTextureFromMemory();
     }
 };
+
+#include "spacer_losowy.h"
+
+template <typename towar, typename transformata>
+__host__ grafika* grafika_P_dla_kraty_2D(spacer_losowy<towar, transformata>& spacer, spacer::dane_iteracji<towar>& iteracja, uint32_t width, uint32_t height, double* suma_ptr = nullptr);
+
+template <typename towar, typename transformata>
+__host__ void plot_grafike_dla_kraty_2D(spacer_losowy<towar, transformata>& spacer, uint64_t pokazywana_grafika, graf& przestrzen, grafika* G, uint32_t width, uint32_t height, float skala_obrazu);
+

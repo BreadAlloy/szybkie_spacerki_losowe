@@ -245,6 +245,7 @@ struct spacer_losowy{
 //               Pola zmienne na cudzie
 //------------------------------------------
 //				 Pola stale na cudzie
+
 	wektor_do_pusbackowania<spacer::dane_iteracji<towar>*> iteracje_zapamietane; //iteracje_zapamietane[0] to stan poszatkowy
 	spacer::dane_trwale<transformata> trwale;
 
@@ -309,11 +310,11 @@ struct spacer_losowy{
 		}
 	}
 
-	__HD__ void dokoncz_iteracje(double dt){
+	__HD__ void dokoncz_iteracje(double delta_t){
 		if(A){
-			iteracjaB.czas = iteracjaA.czas + dt;
+			iteracjaB.czas = iteracjaA.czas + delta_t;
 		} else {
-			iteracjaA.czas = iteracjaB.czas + dt;
+			iteracjaA.czas = iteracjaB.czas + delta_t;
 		}
 		A = !A;
 	}
@@ -421,3 +422,5 @@ __host__ void symulowana_iteracja_na_gpu(spacer_losowy<towar, transformata>* lok
 template <typename towar, typename transformata>
 __host__ void iteruj_na_gpu(spacer_losowy<towar, transformata>& spacer,
 	uint64_t liczba_iteracji = 1);
+
+

@@ -159,7 +159,7 @@ struct spacer_2D_wizalizacja{
 					spacer::wierzcholek& w = spacer.trwale.wierzcholki[i + j * width];
 					spacer::dane_iteracji<towar>& iteracja = *(spacer.iteracje_zapamietane[pokazywana_grafika]);
 					ImGui::Text("Szczegoly wierzcholka: %s", przestrzen.wierzcholki[i + j * width].opis.c_str());
-					pokaz_transformate(spacer.trwale.transformaty[w.transformer]);
+					ladna_tabelka(spacer.trwale.transformaty[w.transformer]);
 					pokaz_stan(estetyczny_wektor<double>(&(iteracja[w.start_wartosci]), w.liczba_kierunkow));
 					ImGui::EndTooltip();
 				}

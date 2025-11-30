@@ -32,6 +32,9 @@ template __host__ spacer_losowy<double, TMDK> spacer_linia(
 template __host__ spacer_losowy<zesp, TMDQ> spacer_linia(
 	uint32_t liczba_wierzcholkow, TMDQ& srodek, TMDQ& konce, graf* linia);
 
+template __host__ spacer_losowy<zesp, TMCQ> spacer_linia(
+	uint32_t liczba_wierzcholkow, TMCQ& srodek, TMCQ& konce, graf* linia);
+
 template<typename transformata>
 __host__ spacer::uklad_transformat<transformata> uklad_transformat_dla_lini(uint32_t liczba_wierzcholkow, transformata& srodek, transformata& koniec) {
 	spacer::uklad_transformat<transformata> uklad(liczba_wierzcholkow);
@@ -76,6 +79,10 @@ template __host__ spacer_losowy<double, TMDK> spacer_krata_2D(
 
 template __host__ spacer_losowy<zesp, TMDQ> spacer_krata_2D(
 	uint32_t liczba_wierzcholkow_boku, TMDQ srodek, TMDQ bok, TMDQ naroznik,
+	graf* krata);
+
+template __host__ spacer_losowy<zesp, TMCQ> spacer_krata_2D(
+	uint32_t liczba_wierzcholkow_boku, TMCQ srodek, TMCQ bok, TMCQ naroznik,
 	graf* krata);
 
 template<typename transformata>
