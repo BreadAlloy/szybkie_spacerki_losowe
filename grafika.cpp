@@ -54,14 +54,14 @@ template __host__ grafika* grafika_P_dla_kraty_2D(spacer_losowy<zesp, TMCQ>& spa
 
 
 template <typename towar, typename transformata>
-__host__ void plot_grafike_dla_kraty_2D(spacer_losowy<towar, transformata>& spacer, uint64_t pokazywana_grafika, graf& przestrzen, grafika* G, uint32_t width, uint32_t height, float skala_obrazu){
+__host__ void plot_grafike_dla_kraty_2D(spacer_losowy<towar, transformata>& spacer, uint64_t pokazywana_grafika, graf& przestrzen, grafika* G, uint32_t width, uint32_t height, float skala_obrazu, std::string nazwa_wykresu){
 	// Nie sprawdza czy grafika nale¿y do tej iteracji
 
 	ImVec2 bmin(0.0, 0.0);
 	ImVec2 bmax((float)height, (float)width);
 	ImVec2 uv0(0.0, 0.0);
 	ImVec2 uv1(1.0, -1.0); // bo tak tworze osie przy tworzeniu grafu
-	if (ImPlot::BeginPlot("##iteracje w spacerze", ImVec2(skala_obrazu * 200.0f, skala_obrazu * 200.0f), ImPlotFlags_Equal)) {
+	if (ImPlot::BeginPlot(nazwa_wykresu.c_str(), ImVec2(skala_obrazu * 200.0f, skala_obrazu * 200.0f), ImPlotFlags_Equal)) {
 		ImPlot::PlotImage("Iteracja w spacerze", (ImTextureID)(intptr_t)(G->texture), bmin, bmax, uv0, uv1);
 		if (ImPlot::IsPlotHovered() && ImGui::GetIO().KeyCtrl) {
 			ImPlotPoint pt = ImPlot::GetPlotMousePos();
@@ -90,8 +90,8 @@ __host__ void plot_grafike_dla_kraty_2D(spacer_losowy<towar, transformata>& spac
 	}
 }
 
-template __host__ void plot_grafike_dla_kraty_2D(spacer_losowy<double, TMDK>& spacer, uint64_t pokazywana_grafika, graf& przestrzen, grafika* G, uint32_t width, uint32_t height, float skala_obrazu);
+template __host__ void plot_grafike_dla_kraty_2D(spacer_losowy<double, TMDK>& spacer, uint64_t pokazywana_grafika, graf& przestrzen, grafika* G, uint32_t width, uint32_t height, float skala_obrazu, std::string nazwa_wykresu);
 
-template __host__ void plot_grafike_dla_kraty_2D(spacer_losowy<zesp, TMDQ>& spacer, uint64_t pokazywana_grafika, graf& przestrzen, grafika* G, uint32_t width, uint32_t height, float skala_obrazu);
+template __host__ void plot_grafike_dla_kraty_2D(spacer_losowy<zesp, TMDQ>& spacer, uint64_t pokazywana_grafika, graf& przestrzen, grafika* G, uint32_t width, uint32_t height, float skala_obrazu, std::string nazwa_wykresu);
 
-template __host__ void plot_grafike_dla_kraty_2D(spacer_losowy<zesp, TMCQ>& spacer, uint64_t pokazywana_grafika, graf& przestrzen, grafika* G, uint32_t width, uint32_t height, float skala_obrazu);
+template __host__ void plot_grafike_dla_kraty_2D(spacer_losowy<zesp, TMCQ>& spacer, uint64_t pokazywana_grafika, graf& przestrzen, grafika* G, uint32_t width, uint32_t height, float skala_obrazu, std::string nazwa_wykresu);

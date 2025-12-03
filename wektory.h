@@ -71,8 +71,10 @@ struct statyczny_wektor{ // wektor automatycznie mallocujacy i zwalnijacy, nie m
 	}
 
 	__HD__ statyczny_wektor& operator=(const statyczny_wektor& kopiowany) {
-		if (this->rozmiar != 0) this->free();
-		this->malloc(kopiowany.rozmiar);
+		if(this->rozmiar != kopiowany.rozmiar){
+			if (this->rozmiar != 0) this->free();
+			this->malloc(kopiowany.rozmiar);
+		}
 		::memcpy(this->PAMIEC, kopiowany.PAMIEC, kopiowany.bajt_rozmiar());
 		return *this;
 	}
@@ -133,15 +135,43 @@ struct estetyczny_wektor { // po prostu otoczka dla wskaznika do pamieci
 };
 
 template<typename typ_wskaznika>
-struct wektor_do_pusbackowania{
+struct wektor_do_pushbackowania{
 	typ_wskaznika* pamiec = nullptr;
 	size_t rozmiar = 0;
 	size_t rozmiar_zmallocowany = 0;
 
-	__HD__ wektor_do_pusbackowania(size_t poczatkowy_rozmiar = 0)
+	__HD__ wektor_do_pushbackowania(size_t poczatkowy_rozmiar = 0)
 		: pamiec(nullptr), rozmiar(0), rozmiar_zmallocowany(0){
 		if (poczatkowy_rozmiar != 0) this->malloc(poczatkowy_rozmiar);
 	}
+
+	__HD__ void przebuduj(size_t poczatkowy_rozmiar){
+		if(rozmiar_zmallocowany != poczatkowy_rozmiar){
+			if (pamiec != nullptr) {
+				this->free();
+			}
+			this->malloc(poczatkowy_rozmiar);
+		} else {
+			rozmiar = 0;
+		}
+	}
+
+	//__HD__ wektor_do_pushbackowania& operator=(wektor_do_pushbackowania&& kopiowany) {
+	//	if(pamiec != nullptr) this->free();
+	//	pamiec = kopiowany.pamiec;
+	//	rozmiar = kopiowany.rozmiar;
+	//	rozmiar_zmallocowany = kopiowany.rozmiar_zmallocowany;
+	//	return *this;
+	//}
+
+	__HD__ wektor_do_pushbackowania& operator=(const wektor_do_pushbackowania& kopiowany){
+		if(pamiec != nullptr){
+			this->free();
+		}
+		this->malloc(kopiowany.rozmiar_zmallocowany);
+		::memcpy(pamiec, kopiowany.pamiec, kopiowany.rozmiar);
+		return *this;
+	} 
 
 	__HD__ void malloc(size_t nowy_rozmiar) { // rozmiar jest w iloœci obiektów typu wskaŸnika
 		ASSERT_Z_ERROR_MSG(pamiec == nullptr, "Coœ jest w pamieci");
@@ -183,7 +213,7 @@ struct wektor_do_pusbackowania{
 		return pamiec[index];
 	}
 
-	__HD__ ~wektor_do_pusbackowania() {
+	__HD__ ~wektor_do_pushbackowania() {
 		if (pamiec != nullptr) {
 			//for(uint64_t i = 0; i < rozmiar; i++) (pamiec[i]).~typ_wskaznika();
 			this->free();

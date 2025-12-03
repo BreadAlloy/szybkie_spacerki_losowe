@@ -30,6 +30,19 @@ _ACRTIMP void __cdecl _wassert(
 
 //wiadomoœæ mo¿e byæ z formatem po przecinku tylko wtedy trzeba SEP u¿yæ na wyra¿eniu
 
+#include <chrono>
+
+#define CZAS_INIT std::chrono::steady_clock::time_point begin;\
+				  std::chrono::steady_clock::time_point end;\
+				  long int diff;
+
+#define CZAS_START begin = std::chrono::steady_clock::now();
+
+#define CZAS_STOP end = std::chrono::steady_clock::now();\
+				  diff = std::chrono::duration_cast<std::chrono::microseconds> (end - begin).count();\
+				  printf("Trwalo: %d ms\n", diff/1000);
+
+
 static inline __HD__ double zero(double) {
 	return 0.0;
 }

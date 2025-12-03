@@ -2,14 +2,17 @@
 
 #include "transformaty_wyspecializowane.h"
 
-//#include "zesp.h"
+//#include <cooperative_groups.h> nie mam compute compatibility 9.0 :( cluster.sync()
 
 template <typename towar, typename transformata>
-__global__ void iteracje_na_gpu(spacer_losowy<towar, transformata>* lokalizacja_na_device, uint64_t ile_blokow,
+__global__ void iteracje_na_gpu(spacer_losowy<towar, transformata>* lokalizacja_na_device, uint64_t ile_watkow,
 								uint64_t liczba_iteracji, uint64_t ile_prac_wykonac) {
+
+	
+	//__shared__ zesp* dzielone[300*300*4];
+
 	spacer::dane_trwale<transformata>& trwale = lokalizacja_na_device->trwale;
 	for(uint64_t i = 0; i < liczba_iteracji; i++){
-		uint64_t index_wierzcholka = 0;
 
 		spacer::dane_iteracji<towar>* iteracja_z = &lokalizacja_na_device->iteracjaA;
 		spacer::dane_iteracji<towar>* iteracja_do = &lokalizacja_na_device->iteracjaB;
@@ -19,16 +22,20 @@ __global__ void iteracje_na_gpu(spacer_losowy<towar, transformata>* lokalizacja_
 		}
 
 		for(uint64_t j = 0; j < ile_prac_wykonac; j++){
-			uint64_t index_watka = (blockIdx.x * ile_blokow + threadIdx.x) * ile_prac_wykonac + j;
+			uint64_t index_pracownika = threadIdx.x + ile_watkow * j;
 
-			index_wierzcholka = trwale.znajdz_wierzcholek(index_watka, index_wierzcholka);
-			if(index_wierzcholka == (uint64_t)-1){
+			spacer::info_pracownika IP = trwale.znajdz_wierzcholek(index_pracownika);
+
+			uint32_t index_wierzcholka = IP.index_wierzcholka;
+			uint8_t index_w_wierzcholku = IP.index_w_wierzcholku;
+
+			if((index_wierzcholka == (uint32_t)-1) || (index_w_wierzcholku == (uint8_t)-1)){
 				//printf("Nadmierny watek: %d", threadIdx.x);
 				break;
 			}
 	
-			uint64_t index_w_wierzcholku = trwale.znajdywacz_wierzcholka[index_wierzcholka] - index_watka - 1;
 			spacer::wierzcholek& wierzcholek = trwale.wierzcholki[index_wierzcholka];
+
 			trwale.transformaty[wierzcholek.transformer].transformuj(trwale, wierzcholek, *iteracja_z, *iteracja_do, index_w_wierzcholku);
 		}
 		__syncthreads();
@@ -57,9 +64,8 @@ __HD__ zesp dot(const estetyczny_wektor<zesp>& a, const estetyczny_wektor<zesp>&
 }
 
 template <typename towar, typename transformata>
-__global__ void iteracja_na_gpu(spacer_losowy<towar, transformata>* lokalizacja_na_device, uint64_t ile_blokow) {
+__global__ void iteracja_na_gpu(spacer_losowy<towar, transformata>* lokalizacja_na_device, uint64_t ile_watkow_na_blok, uint64_t ile_blokow, uint64_t ile_prac_wykonac) {
 	spacer::dane_trwale<transformata>& trwale = lokalizacja_na_device->trwale;
-	uint64_t index_wierzcholka = 0;
 
 	spacer::dane_iteracji<towar>* iteracja_z = &lokalizacja_na_device->iteracjaA;
 	spacer::dane_iteracji<towar>* iteracja_do = &lokalizacja_na_device->iteracjaB;
@@ -68,68 +74,65 @@ __global__ void iteracja_na_gpu(spacer_losowy<towar, transformata>* lokalizacja_
 		iteracja_do = &lokalizacja_na_device->iteracjaA;
 	}
 
-	constexpr int ile_prac_wykonac = 10;
-
 	for(uint64_t j = 0; j < ile_prac_wykonac; j++){
-		uint64_t index_watka = (blockIdx.x * ile_blokow + threadIdx.x) * ile_prac_wykonac + j;
+		uint64_t index_pracownika = ile_watkow_na_blok * (ile_prac_wykonac * blockIdx.x + j) + threadIdx.x;
+	
+		spacer::info_pracownika IP = trwale.znajdz_wierzcholek(index_pracownika);
 
-		index_wierzcholka = trwale.znajdz_wierzcholek(index_watka, index_wierzcholka);
-		if(index_wierzcholka == (uint64_t)-1) break;
+		uint32_t index_wierzcholka = IP.index_wierzcholka;
+		uint8_t index_w_wierzcholku = IP.index_w_wierzcholku;
 
-		uint64_t index_w_wierzcholku = trwale.znajdywacz_wierzcholka[index_wierzcholka] - index_watka - 1;
+		if ((index_wierzcholka == (uint32_t)-1) || (index_w_wierzcholku == (uint8_t)-1)) {
+			//printf("Nadmierny watek: %d", threadIdx.x);
+			break;
+		}
+
 		spacer::wierzcholek& wierzcholek = trwale.wierzcholki[index_wierzcholka];
+
 		trwale.transformaty[wierzcholek.transformer].transformuj(trwale, wierzcholek, *iteracja_z, *iteracja_do, index_w_wierzcholku);
 	}
-	__syncthreads();
-	if(threadIdx.x == 0 && blockIdx.x == 0) lokalizacja_na_device->dokoncz_iteracje(1.0);
-	__syncthreads();
 }
 
 template <typename towar, typename transformata>
-__host__ void symulowana_iteracja_na_gpu(spacer_losowy<towar, transformata>* lokalizacja_na_device, uint64_t threadIdx) {
-	spacer::dane_trwale<transformata>& trwale = lokalizacja_na_device->trwale;
-	uint64_t index_wierzcholka = 0;
-
-	spacer::dane_iteracji<towar>* iteracja_z = &lokalizacja_na_device->iteracjaA;
-	spacer::dane_iteracji<towar>* iteracja_do = &lokalizacja_na_device->iteracjaB;
-	if (lokalizacja_na_device->A == false) {
-		iteracja_z = &lokalizacja_na_device->iteracjaB;
-		iteracja_do = &lokalizacja_na_device->iteracjaA;
-	}
-
-	constexpr int ile_prac_wykonac = 10;
-
-	for (uint64_t j = 0; j < ile_prac_wykonac; j++) {
-		uint64_t index_watka = threadIdx * ile_prac_wykonac + j;
-
-		index_wierzcholka = trwale.znajdz_wierzcholek(index_watka, index_wierzcholka);
-		if (index_wierzcholka == (uint64_t)-1) break;
-
-		uint64_t index_w_wierzcholku = trwale.znajdywacz_wierzcholka[index_wierzcholka] - index_watka - 1;
-		spacer::wierzcholek& wierzcholek = trwale.wierzcholki[index_wierzcholka];
-		trwale.transformaty[wierzcholek.transformer].transformuj(trwale, wierzcholek, *iteracja_z, *iteracja_do, index_w_wierzcholku);
-	} 
-	//if (threadIdx == 0) lokalizacja_na_device->dokoncz_iteracje(1.0);
+__global__ void zakoncz_iteracje(spacer_losowy<towar, transformata>* lokalizacja_na_device){ //na jeden watek w jednym bloku
+	lokalizacja_na_device->dokoncz_iteracje(1.0);
 }
-
-template __host__ void symulowana_iteracja_na_gpu<zesp, TMDQ>(spacer_losowy<zesp, TMDQ>* lokalizacja_na_device, uint64_t threadIdx);
 
 template <typename towar, typename transformata>
 __host__ void iteruj_na_gpu(spacer_losowy<towar, transformata>& spacer,
-	uint64_t liczba_iteracji) {
+	uint64_t liczba_iteracji, uint64_t liczba_watkow) {
 
-	//spacer.trwale.ile_watkow(10)
 	uint64_t ile_prac = spacer.trwale.ile_prac();
-	constexpr int max_ilosc_watkow_w_bloku = 100;
-	uint64_t ile_prac_na_watek = ile_prac / max_ilosc_watkow_w_bloku + 1;
-	iteracje_na_gpu<towar, transformata><<<1, max_ilosc_watkow_w_bloku, 0, spacer.stream>>>(spacer.lokalizacja_na_device, 1, liczba_iteracji, ile_prac_na_watek);
+	uint64_t ile_prac_na_watek = ile_prac / liczba_watkow + 1;
+	iteracje_na_gpu<towar, transformata><<<1, liczba_watkow, 0, spacer.stream>>>(spacer.lokalizacja_na_device, liczba_watkow, liczba_iteracji, ile_prac_na_watek);
 	checkCudaErrors(cudaStreamSynchronize(spacer.stream));
 	checkCudaErrors(cudaGetLastError());
 }
 
 template __host__ void iteruj_na_gpu<zesp, TMDQ>(spacer_losowy<zesp, TMDQ>& spacer,
-	uint64_t liczba_iteracji);
+	uint64_t liczba_iteracji, uint64_t liczba_watkow);
 
+constexpr uint32_t ile_watkow_na_blok_max = 100;
+
+template <typename towar, typename transformata>
+__host__ void iteracje_na_gpu(spacer_losowy<towar, transformata>& spacer,
+	uint64_t liczba_iteracji, uint64_t ile_prac_na_watek) {
+
+	uint64_t ile_prac = spacer.trwale.ile_prac();
+	uint64_t ile_watkow_sumarycznie = ile_prac / ile_prac_na_watek + 1;
+	uint64_t ile_blokow = ile_watkow_sumarycznie / ile_watkow_na_blok_max + 1;
+	uint64_t ile_watkow = ile_watkow_sumarycznie / ile_blokow + 1;
+
+	for(uint32_t i = 0; i < liczba_iteracji; i++){
+		iteracja_na_gpu<towar, transformata><<<ile_blokow, ile_watkow, 0, spacer.stream>>>(spacer.lokalizacja_na_device, ile_watkow, ile_blokow, ile_prac_na_watek);
+		checkCudaErrors(cudaStreamSynchronize(spacer.stream));
+		zakoncz_iteracje<towar, transformata><<<1, 1, 0, spacer.stream>>>(spacer.lokalizacja_na_device);
+		checkCudaErrors(cudaGetLastError());
+	}
+}
+
+template __host__ void iteracje_na_gpu<zesp, TMDQ>(spacer_losowy<zesp, TMDQ>& spacer,
+	uint64_t liczba_iteracji, uint64_t ile_prac_na_watek);
 
 __HD__ void testy_macierzy() {
 	transformata_macierz<double> t1(1.0);

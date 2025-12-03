@@ -30,6 +30,7 @@ struct wierzcholek{
 
 	__HD__ wierzcholek(uint64_t start_wartosci = (uint64_t)-1, uint8_t liczba_kierunkow = 0)
 	: start_wartosci(start_wartosci), liczba_kierunkow(liczba_kierunkow){}
+
 };
 
 template<typename transformata>
@@ -55,18 +56,35 @@ struct uklad_transformat{ // zbiornik na transformaty potem bêdzie sprawdzane cz
 	}
 };
 
+struct info_pracownika{
+	uint32_t index_wierzcholka;
+	uint8_t index_w_wierzcholku;
+
+	__HD__ info_pracownika(uint32_t index_wierzcholka, uint8_t index_w_wierzcholku)
+	: index_w_wierzcholku(index_w_wierzcholku), index_wierzcholka(index_wierzcholka){}
+
+	__HD__ bool operator==(info_pracownika drugi){
+		return (index_wierzcholka == drugi.index_wierzcholka) && 
+			   (index_w_wierzcholku == drugi.index_w_wierzcholku);
+	}
+};
+
+//IF_HD(
+//const info_pracownika niepotrzebny_pracownik((uint32_t)-1, (uint8_t)-1);,
+//__constant__ info_pracownika niepotrzebny_pracownik((uint32_t)-1, (uint8_t)-1);
+//)
+
 template<typename transformata>
 struct dane_trwale{ //operatory, to gdzie wysy³aæ, przestrzen, raczej nie zmienia sie z czasem
 	statyczny_wektor<uint64_t> gdzie_wyslac; // krawedzie w grafie
 	statyczny_wektor<spacer::wierzcholek> wierzcholki;
-	statyczny_wektor<uint64_t> znajdywacz_wierzcholka; // znajduje wierzcholek na podstawie indexu watka
+	statyczny_wektor<info_pracownika> znajdywacz_wierzcholka; // znajduje wierzcholek na podstawie indexu watka
 	statyczny_wektor<transformata> transformaty;
 
 	__host__ dane_trwale(const graf& przestrzen) {
 		ASSERT_Z_ERROR_MSG(przestrzen.czy_gotowy(), "graf nie byl gotowy\n");
 
 		wierzcholki.malloc(przestrzen.liczba_wierzcholkow());
-		znajdywacz_wierzcholka.malloc(przestrzen.liczba_wierzcholkow());
 
 		uint64_t suma_kubelkow = 0;
 		for (ID_W i = 0; i < przestrzen.liczba_wierzcholkow(); i++) {
@@ -86,23 +104,34 @@ struct dane_trwale{ //operatory, to gdzie wysy³aæ, przestrzen, raczej nie zmieni
 		}
 	}
 
+	// mo¿na przygotowac dopiero po dodaniu transformat
 	__host__ void przygotuj_znajdywacz_wierzcholka(){
-		uint64_t znajdywacz_wierzcholka_iterator = 0;
+		uint64_t ile_prac = 0;
 		for (ID_W i = 0; i < wierzcholki.rozmiar; i++) {
-			znajdywacz_wierzcholka_iterator += transformaty[(wierzcholki[i]).transformer].ile_watkow;
-			znajdywacz_wierzcholka[i] = znajdywacz_wierzcholka_iterator;
+			for (uint8_t j = 0; j < transformaty[(wierzcholki[i]).transformer].ile_watkow; j++) {
+				ile_prac++;
+			}
+		}
+		znajdywacz_wierzcholka.malloc(ile_prac);
+
+		uint64_t mem = 0;
+		for (ID_W i = 0; i < wierzcholki.rozmiar; i++) {
+			for(uint8_t j = 0; j < transformaty[(wierzcholki[i]).transformer].ile_watkow; j++){
+				znajdywacz_wierzcholka[mem] = info_pracownika(i, j);
+				mem++;
+			}
 		}
 	}
 
-	__host__ uint64_t ile_watkow(uint64_t ile_prac_na_watek){
+	__HD__ uint64_t ile_watkow(uint64_t ile_prac_na_watek){
 		return (ile_prac() / ile_prac_na_watek) + 1;
 	}
 
-	__host__ uint64_t ile_prac(){
-		return znajdywacz_wierzcholka[znajdywacz_wierzcholka.rozmiar - 1];
+	__HD__ uint64_t ile_prac(){
+		return znajdywacz_wierzcholka.rozmiar;
 	}
 
-	__host__ uint64_t liczba_kubelkow(){
+	__HD__ uint64_t liczba_kubelkow(){
 		return gdzie_wyslac.rozmiar;
 	}
 
@@ -161,12 +190,12 @@ struct dane_trwale{ //operatory, to gdzie wysy³aæ, przestrzen, raczej nie zmieni
 		return wierzcholki.rozmiar;
 	}
 
-	__HD__ uint64_t znajdz_wierzcholek(uint64_t index_watka, uint64_t cache = 0) {
+	__HD__ info_pracownika znajdz_wierzcholek(uint64_t index_pracownika, uint64_t cache = 0) {
 		// zwraca index szukanego wierzcho³ka
-		for (uint64_t i = cache; i < znajdywacz_wierzcholka.rozmiar; i++) {
-			if (index_watka < znajdywacz_wierzcholka[i]) return i;
+		if(index_pracownika < ile_prac()){
+			return znajdywacz_wierzcholka[index_pracownika];
 		}
-		return (uint64_t)-1; // nie znaleziono wierzcholka
+		return info_pracownika((uint32_t)-1, (uint8_t)-1); // nie znaleziono wierzcholka
 	}
 	
 	__host__ bool czy_gotowy(){
@@ -187,6 +216,9 @@ struct dane_iteracji{
 
 	dane_iteracji(uint64_t liczba_wartosci = 0)
 	: wartosci(liczba_wartosci) {}
+
+	dane_iteracji(const dane_iteracji& kopiowane)
+	: wartosci(kopiowane.wartosci), czas(kopiowane.czas){}
 
 	void zeruj(){
 		wartosci.memset(zero(towar()));
@@ -246,7 +278,7 @@ struct spacer_losowy{
 //------------------------------------------
 //				 Pola stale na cudzie
 
-	wektor_do_pusbackowania<spacer::dane_iteracji<towar>*> iteracje_zapamietane; //iteracje_zapamietane[0] to stan poszatkowy
+	wektor_do_pushbackowania<spacer::dane_iteracji<towar>*> iteracje_zapamietane; //iteracje_zapamietane[0] to stan poszatkowy
 	spacer::dane_trwale<transformata> trwale;
 
 	spacer_losowy* lokalizacja_na_device = nullptr;
@@ -260,6 +292,22 @@ struct spacer_losowy{
 		for(uint64_t i = 0; i < kopiowany.iteracje_zapamietane.rozmiar; i++){
 			iteracje_zapamietane.pushback(new spacer::dane_iteracji<towar>(*(kopiowany.iteracje_zapamietane[i])));
 		}
+	}
+
+	spacer_losowy& operator=(const spacer_losowy& kopiowany){
+		trwale = kopiowany.trwale;
+		iteracjaA = kopiowany.iteracjaA;
+		iteracjaB = kopiowany.iteracjaB;
+		A = kopiowany.A;
+		iteracje_zapamietane.przebuduj(kopiowany.iteracje_zapamietane.rozmiar_zmallocowany);
+		for (uint64_t i = 0; i < kopiowany.iteracje_zapamietane.rozmiar; i++) {
+			spacer::dane_iteracji<towar>& temp = *(kopiowany.iteracje_zapamietane[i]);
+			spacer::dane_iteracji<towar>* nowy = new spacer::dane_iteracji<towar>(temp);
+			iteracje_zapamietane.pushback(nowy);
+		}
+		//this->~spacer_losowy();
+		//std::construct_at<spacer_losowy>(this, kopiowany);
+		return *this;
 	}
 
 	__host__ bool czy_gotowy(){
@@ -321,7 +369,8 @@ struct spacer_losowy{
 
 	~spacer_losowy(){
 		for(uint64_t i = 0; i < iteracje_zapamietane.rozmiar; i++){
-			delete (iteracje_zapamietane[i]);
+			spacer::dane_iteracji<towar>* ptr = iteracje_zapamietane[i];
+			delete (ptr);
 		}
 		if(lokalizacja_na_device != nullptr) zburz_na_cuda();
 	}
@@ -416,11 +465,14 @@ __host__ void test_funkcji_tworzacych_spacery_2(transformata srodek, transformat
 template <typename towar, typename transformata>
 __global__ void iteracje_na_gpu(spacer_losowy<towar, transformata>* lokalizacja_na_device, uint64_t ile_blokow, uint64_t liczba_iteracji = 1, uint64_t ile_prac_wykonac = 1);
 
-template <typename towar, typename transformata>
-__host__ void symulowana_iteracja_na_gpu(spacer_losowy<towar, transformata>* lokalizacja_na_device, uint64_t threadIdx);
+
+constexpr int max_ilosc_watkow_w_bloku = 100;
 
 template <typename towar, typename transformata>
 __host__ void iteruj_na_gpu(spacer_losowy<towar, transformata>& spacer,
-	uint64_t liczba_iteracji = 1);
+	uint64_t liczba_iteracji = 1, uint64_t liczba_watkow = max_ilosc_watkow_w_bloku);
 
+template <typename towar, typename transformata>
+__host__ void iteracje_na_gpu(spacer_losowy<towar, transformata>& spacer,
+	uint64_t liczba_iteracji, uint64_t ile_prac_na_watek);
 

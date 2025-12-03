@@ -19,7 +19,7 @@
 #include "testy_czy_dziala.h"
 
 // Main code
-int main(int ccc, char** aaa)
+int main(int argc, char** argv)
 {
     //assert(false);
     /*        Test czy CUDA dzia³a          */
@@ -30,6 +30,10 @@ int main(int ccc, char** aaa)
     /*        Test czy CUDA dzia³a          */
 
     cuda_tester();
+
+    int dev = findCudaDevice(argc, (const char**)argv);
+    cudaDeviceProp prop;
+    cudaGetDeviceProperties(&prop, dev);
 
     static_assert(sizeof(void*) == 8, "Powinno byc 8 bytow w pointerze");
 
@@ -42,6 +46,7 @@ int main(int ccc, char** aaa)
     test_spaceru_kwantowy_dyskretny TSQD;
     //test_spaceru_kwantowy_dyskretny_gpu TSQDG;
     test_spaceru_kwantowy_ciagly TSQC;
+    test_czasow_wykonania_kwantowy TCWQ;
 
     while (!glfwWindowShouldClose(window))
     {
@@ -66,6 +71,7 @@ int main(int ccc, char** aaa)
         TSQD.pokaz_okno(*io);
         //TSQDG.pokaz_okno(*io);
         TSQC.pokaz_okno(*io);
+        TCWQ.pokaz_okno(*io);
 
         //processInput(window); // z grafiki
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // czesciowo z grafiki
