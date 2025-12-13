@@ -19,6 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="definicje_typowych_macierzy.h" />
     <ClInclude Include="graf.h" />
     <ClInclude Include="grafika.h" />
     <ClInclude Include="imgui\backends\imgui_impl_glfw.h" />
@@ -55,6 +56,7 @@
     <ClInclude Include="zesp.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="definicje_typowych_macierzy.cpp" />
     <ClCompile Include="graf.cpp" />
     <ClCompile Include="grafika.cpp" />
     <ClCompile Include="imgui\backends\imgui_impl_glfw.cpp" />

@@ -112,11 +112,9 @@ __host__ void iteruj_na_gpu(spacer_losowy<towar, transformata>& spacer,
 template __host__ void iteruj_na_gpu<zesp, TMDQ>(spacer_losowy<zesp, TMDQ>& spacer,
 	uint64_t liczba_iteracji, uint64_t liczba_watkow);
 
-constexpr uint32_t ile_watkow_na_blok_max = 100;
-
 template <typename towar, typename transformata>
 __host__ void iteracje_na_gpu(spacer_losowy<towar, transformata>& spacer,
-	uint64_t liczba_iteracji, uint64_t ile_prac_na_watek) {
+	uint64_t liczba_iteracji, uint64_t ile_prac_na_watek, uint32_t ile_watkow_na_blok_max) {
 
 	uint64_t ile_prac = spacer.trwale.ile_prac();
 	uint64_t ile_watkow_sumarycznie = ile_prac / ile_prac_na_watek + 1;
@@ -127,12 +125,13 @@ __host__ void iteracje_na_gpu(spacer_losowy<towar, transformata>& spacer,
 		iteracja_na_gpu<towar, transformata><<<ile_blokow, ile_watkow, 0, spacer.stream>>>(spacer.lokalizacja_na_device, ile_watkow, ile_blokow, ile_prac_na_watek);
 		checkCudaErrors(cudaStreamSynchronize(spacer.stream));
 		zakoncz_iteracje<towar, transformata><<<1, 1, 0, spacer.stream>>>(spacer.lokalizacja_na_device);
+		checkCudaErrors(cudaStreamSynchronize(spacer.stream));
 		checkCudaErrors(cudaGetLastError());
 	}
 }
 
 template __host__ void iteracje_na_gpu<zesp, TMDQ>(spacer_losowy<zesp, TMDQ>& spacer,
-	uint64_t liczba_iteracji, uint64_t ile_prac_na_watek);
+	uint64_t liczba_iteracji, uint64_t ile_prac_na_watek, uint32_t ile_watkow_na_blok_max);
 
 __HD__ void testy_macierzy() {
 	transformata_macierz<double> t1(1.0);

@@ -20,6 +20,8 @@
 
 #include "pomocne_funkcje.h"
 
+#include "src/SOIL/stb_image_aug.h"
+
 struct grafika {
     unsigned char* data = nullptr;
     GLuint texture = 0;
@@ -77,6 +79,12 @@ struct grafika {
             ImGui::EndTooltip();
         }
 
+    }
+
+    // Nie przetestowane jeszcze
+    void SaveToFile(std::string nazwa_pliku){
+        ASSERT_Z_ERROR_MSG(data != nullptr, "Nie ma nic w pamieci\n");
+        stbi_write_bmp(nazwa_pliku.c_str(), width, height, 1, (void*)data);
     }
 
     bool LoadTextureFromMemory()

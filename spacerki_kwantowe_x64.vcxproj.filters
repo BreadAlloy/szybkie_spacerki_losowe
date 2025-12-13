@@ -111,6 +111,9 @@
     <ClCompile Include="grafika.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="definicje_typowych_macierzy.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="imgui\imconfig.h">
@@ -213,6 +216,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="testy_czy_dziala.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="definicje_typowych_macierzy.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

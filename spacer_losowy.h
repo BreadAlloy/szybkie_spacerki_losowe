@@ -207,6 +207,21 @@ struct dane_trwale{ //operatory, to gdzie wysy³aæ, przestrzen, raczej nie zmieni
 		// troche brakuje checku czy zosta³o wywo³ane przygotuj_znajdywacz_wierzcholka()
 		return ret;
 	}
+
+	__host__ void zamien_transformate(uint32_t index_do_wymiany, transformata& wkladana) {
+		ASSERT_Z_ERROR_MSG(index_do_wymiany < transformaty.rozmiar, "Nie ma transformaty o takim indeksie\n");
+		transformata& wymieniana = transformaty[index_do_wymiany];
+		ASSERT_Z_ERROR_MSG(wymieniana.arrnosc == wkladana.arrnosc, "Wkladana transformata ma inna arrnosc\n");
+		wymieniana = wkladana;
+	}
+
+	__host__ void odwroc() {
+		// dla dowolnego grafu to nie dzia³a, trzeba permutacje odwróciæ
+		for(uint32_t i = 0; i < transformaty.rozmiar; i++){
+			transformata odwracana = hermituj(transformaty[i]);
+			zamien_transformate(i, odwracana);
+		}
+	}
 };
 
 template<typename towar>
@@ -299,6 +314,13 @@ struct spacer_losowy{
 		iteracjaA = kopiowany.iteracjaA;
 		iteracjaB = kopiowany.iteracjaB;
 		A = kopiowany.A;
+		
+		// Opró¿nij zapamietane iteracje
+		for (uint64_t i = 0; i < iteracje_zapamietane.rozmiar; i++) {
+			spacer::dane_iteracji<towar>* ptr = iteracje_zapamietane[i];
+			delete (ptr);
+		}
+
 		iteracje_zapamietane.przebuduj(kopiowany.iteracje_zapamietane.rozmiar_zmallocowany);
 		for (uint64_t i = 0; i < kopiowany.iteracje_zapamietane.rozmiar; i++) {
 			spacer::dane_iteracji<towar>& temp = *(kopiowany.iteracje_zapamietane[i]);
@@ -421,6 +443,11 @@ struct spacer_losowy{
 		stream = 0;
 	}
 
+	void odwroc(){
+		// dla dowolnego grafu to nie dzia³a, trzeba permutacje odwróciæ
+		trwale.odwroc();
+	}
+
 	//__HD__ virtual void mala_praca(statyczny_wektor<towar>& docelowy, uint64_t index_watka){
 	//	uint64_t index_wierzcholka = znajdz_wierzcholek(index_watka);
 	//	uint64_t index_watka_w_wierzcholku = znajdywacz_wierzcholka[index_wierzcholka] - index_watka;
@@ -474,5 +501,5 @@ __host__ void iteruj_na_gpu(spacer_losowy<towar, transformata>& spacer,
 
 template <typename towar, typename transformata>
 __host__ void iteracje_na_gpu(spacer_losowy<towar, transformata>& spacer,
-	uint64_t liczba_iteracji, uint64_t ile_prac_na_watek);
+	uint64_t liczba_iteracji, uint64_t ile_prac_na_watek, uint32_t ile_watkow_na_blok_max);
 

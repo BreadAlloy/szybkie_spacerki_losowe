@@ -43,7 +43,7 @@ struct transformata_macierz_dyskretna_kwantowa : transformata_macierz<zesp> {
 typedef transformata_macierz_dyskretna_kwantowa TMDQ;
 
 
-constexpr double dt = 0.000001;
+constexpr double dt = 0.0001;
 
 struct transformata_macierz_ciagla_kwantowa : transformata_macierz<zesp> {
 	typedef transformata_macierz_ciagla_kwantowa TMCQ;

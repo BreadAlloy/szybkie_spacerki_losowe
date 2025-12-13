@@ -29,7 +29,7 @@ int main(int argc, char** argv)
     //std::cout << "Test%s%s%s\n";
     /*        Test czy CUDA dzia³a          */
 
-    cuda_tester();
+    //cuda_tester();
 
     int dev = findCudaDevice(argc, (const char**)argv);
     cudaDeviceProp prop;
@@ -42,11 +42,12 @@ int main(int argc, char** argv)
     if(ret != 0) return ret;
     //ImGuiIO& io = temp;
 
-    test_spaceru_klasyczny_dyskretny TSKD;
+    //test_spaceru_klasyczny_dyskretny TSKD;
     test_spaceru_kwantowy_dyskretny TSQD;
     //test_spaceru_kwantowy_dyskretny_gpu TSQDG;
-    test_spaceru_kwantowy_ciagly TSQC;
-    test_czasow_wykonania_kwantowy TCWQ;
+    //test_spaceru_kwantowy_ciagly TSQC;
+    //test_czasow_wykonania_kwantowy TCWQ;
+    //test_sciezki_spaceru_kwantowy_dyskretny TSSKD;
 
     while (!glfwWindowShouldClose(window))
     {
@@ -67,11 +68,12 @@ int main(int argc, char** argv)
             ImPlot::ShowDemoWindow(&show_demo_window);
         }
 
-        TSKD.pokaz_okno(*io);
+        //TSKD.pokaz_okno(*io);
         TSQD.pokaz_okno(*io);
         //TSQDG.pokaz_okno(*io);
-        TSQC.pokaz_okno(*io);
-        TCWQ.pokaz_okno(*io);
+        //TSQC.pokaz_okno(*io);
+        //TCWQ.pokaz_okno(*io);
+        //TSSKD.pokaz_okno(*io);
 
         //processInput(window); // z grafiki
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // czesciowo z grafiki
