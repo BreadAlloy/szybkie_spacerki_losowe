@@ -66,12 +66,12 @@ graf graf_lini_cykl(uint32_t liczba_wierzcholkow, bool z_nazwami){
 }
 
 graf graf_krata_2D(uint32_t liczba_wierzcholkow_boku, bool z_nazwami){
-	/*			i
+	/*			i(x)
 		+------->
 		|	|0,0} 0 -- 0 |1,0} 1 -- 0 |2,0} 1 -(...)- 0 |n-2,0} 1 -- 0 |n-1,0}
 		|     1			   2            2				   2		      1
 		|	  |			   |			|				   |		  	  |
-	j   V	  1			   2			2		           2              1
+	j(y)V	  1			   2			2		           2              1
 			|0,1} 0 -- 0 |1,1} 1 -- 0 |2,1} 1 -(...)- 0 |n-2,1} 1 -- 0 |n-1,1}
 			  2 		   3			3				   3		      2
 			  |			   |			|				   |			  |
@@ -86,7 +86,7 @@ graf graf_krata_2D(uint32_t liczba_wierzcholkow_boku, bool z_nazwami){
 
 			n = liczba_wierzcholkow_boku
 	*/
-	graf linia(graf_lini(liczba_wierzcholkow_boku, z_nazwami));
+	graf linia(graf_lini(liczba_wierzcholkow_boku, BEZ_NAZW));
 	graf G(0);
 	graf gora_dol(linia);
 	graf srodek(linia);
@@ -99,17 +99,17 @@ graf graf_krata_2D(uint32_t liczba_wierzcholkow_boku, bool z_nazwami){
 		gora_dol.dodaj_polaczenia(i, 1);
 	}
 
-	for(uint32_t i = 0; i < liczba_wierzcholkow_boku; i++){
-		if((i == 0) || (i == (liczba_wierzcholkow_boku - 1))){
+	for(uint32_t j = 0; j < liczba_wierzcholkow_boku; j++){
+		if((j == 0) || (j == (liczba_wierzcholkow_boku - 1))){
 			G += gora_dol;
 		} else {
 			G += srodek;
 		}
 		if (z_nazwami) {
 			char temp[1000];
-			for(ID_W j = G.liczba_wierzcholkow() - liczba_wierzcholkow_boku; j < G.liczba_wierzcholkow(); j++){
-				int size = snprintf(temp, 1000, "|%d:%d}", i, j % liczba_wierzcholkow_boku);
-				G.update_opis(j, std::string(temp, size));
+			for(ID_W i = G.liczba_wierzcholkow() - liczba_wierzcholkow_boku; i < G.liczba_wierzcholkow(); i++){
+				int size = snprintf(temp, 1000, "|%d:%d}", i % liczba_wierzcholkow_boku, j);
+				G.update_opis(i, std::string(temp, size));
 			}
 		}
 	}

@@ -10,11 +10,11 @@
 
 typedef double typ_prawdopodobienstwa;
 
-static inline double P(double a){
+static inline __HD__ double P(double a){
 	return a;
 }
 
-static inline double P(const zesp& a) {
+static inline __HD__ double P(const zesp& a) {
 	return a.norm();
 }
 
@@ -32,6 +32,23 @@ struct wierzcholek{
 	: start_wartosci(start_wartosci), liczba_kierunkow(liczba_kierunkow){}
 
 };
+
+struct info_pracownika {
+	uint32_t index_wierzcholka;
+	uint8_t index_w_wierzcholku;
+
+	__HD__ info_pracownika(uint32_t index_wierzcholka, uint8_t index_w_wierzcholku)
+		: index_w_wierzcholku(index_w_wierzcholku), index_wierzcholka(index_wierzcholka) {
+	}
+
+	__HD__ bool operator==(info_pracownika drugi) {
+		return (index_wierzcholka == drugi.index_wierzcholka) &&
+			(index_w_wierzcholku == drugi.index_w_wierzcholku);
+	}
+};
+
+typedef info_pracownika indeks_pozycji;
+typedef std::vector<indeks_pozycji> indeksy_pozycji;
 
 template<typename transformata>
 struct uklad_transformat{ // zbiornik na transformaty potem bêdzie sprawdzane czy dzia³aj¹ w parze z danymi trwalymi
@@ -56,19 +73,6 @@ struct uklad_transformat{ // zbiornik na transformaty potem bêdzie sprawdzane cz
 	}
 };
 
-struct info_pracownika{
-	uint32_t index_wierzcholka;
-	uint8_t index_w_wierzcholku;
-
-	__HD__ info_pracownika(uint32_t index_wierzcholka, uint8_t index_w_wierzcholku)
-	: index_w_wierzcholku(index_w_wierzcholku), index_wierzcholka(index_wierzcholka){}
-
-	__HD__ bool operator==(info_pracownika drugi){
-		return (index_wierzcholka == drugi.index_wierzcholka) && 
-			   (index_w_wierzcholku == drugi.index_w_wierzcholku);
-	}
-};
-
 //IF_HD(
 //const info_pracownika niepotrzebny_pracownik((uint32_t)-1, (uint8_t)-1);,
 //__constant__ info_pracownika niepotrzebny_pracownik((uint32_t)-1, (uint8_t)-1);
@@ -80,6 +84,7 @@ struct dane_trwale{ //operatory, to gdzie wysy³aæ, przestrzen, raczej nie zmieni
 	statyczny_wektor<spacer::wierzcholek> wierzcholki;
 	statyczny_wektor<info_pracownika> znajdywacz_wierzcholka; // znajduje wierzcholek na podstawie indexu watka
 	statyczny_wektor<transformata> transformaty;
+	statyczny_wektor<uint64_t> indeksy_absorbowane;
 
 	__host__ dane_trwale(const graf& przestrzen) {
 		ASSERT_Z_ERROR_MSG(przestrzen.czy_gotowy(), "graf nie byl gotowy\n");
@@ -135,6 +140,10 @@ struct dane_trwale{ //operatory, to gdzie wysy³aæ, przestrzen, raczej nie zmieni
 		return gdzie_wyslac.rozmiar;
 	}
 
+	__HD__ uint64_t liczba_absorberow(){
+		return indeksy_absorbowane.rozmiar;
+	}
+
 	__host__ void dodaj_transformaty(uklad_transformat<transformata>& uklad){
 		ASSERT_Z_ERROR_MSG(uklad.indeksy.size() == wierzcholki.rozmiar, "jest inna liczba transformat i wierzchoklow\n");
 		bool error = false;
@@ -156,6 +165,20 @@ struct dane_trwale{ //operatory, to gdzie wysy³aæ, przestrzen, raczej nie zmieni
 		}
 	}
 
+	__host__ void dodaj_absorbery(indeksy_pozycji gdzie_absorbery){
+		indeksy_absorbowane.malloc(gdzie_absorbery.size());
+		for(uint64_t i = 0; i < gdzie_absorbery.size(); i++){
+			indeks_pozycji gdzie = gdzie_absorbery[i];
+			wierzcholek& w = wierzcholki[gdzie.index_wierzcholka];
+			ASSERT_Z_ERROR_MSG(w.liczba_kierunkow > gdzie.index_w_wierzcholku, "Wierzcholek nie ma tylu polaczen\n");
+			uint64_t indeks_absorbowany = w.start_wartosci + (uint64_t)gdzie.index_w_wierzcholku;
+			for(uint64_t j = 0; j < i; j++){
+				ASSERT_Z_ERROR_MSG(indeks_absorbowany != indeksy_absorbowane[j], "Wierzcholkek %d, i kubelek %d sa juz absorbowane\n" SEP gdzie.index_wierzcholka SEP gdzie.index_w_wierzcholku);
+			}
+			indeksy_absorbowane[i] = indeks_absorbowany;
+		}
+	}
+
 	__host__ void zbuduj_na_cuda(cudaStream_t stream){
 		gdzie_wyslac.cuda_malloc();
 		gdzie_wyslac.cuda_zanies(stream);
@@ -173,6 +196,9 @@ struct dane_trwale{ //operatory, to gdzie wysy³aæ, przestrzen, raczej nie zmieni
 
 		transformaty.cuda_malloc();
 		transformaty.cuda_zanies(stream);
+
+		indeksy_absorbowane.cuda_malloc();
+		indeksy_absorbowane.cuda_zanies(stream);
 	}
 
 	__host__ void zburz_na_cuda(){
@@ -184,6 +210,7 @@ struct dane_trwale{ //operatory, to gdzie wysy³aæ, przestrzen, raczej nie zmieni
 			transformaty[i].cuda_free();
 		}
 		transformaty.cuda_free();
+		indeksy_absorbowane.cuda_free();
 	}
 
 	__HD__ uint64_t liczba_wierzcholkow(){
@@ -227,16 +254,19 @@ struct dane_trwale{ //operatory, to gdzie wysy³aæ, przestrzen, raczej nie zmieni
 template<typename towar>
 struct dane_iteracji{
 	statyczny_wektor<towar> wartosci;
+	statyczny_wektor<double> wartosci_zaabsorbowane;
 	double czas = 0.0;
 
-	dane_iteracji(uint64_t liczba_wartosci = 0)
-	: wartosci(liczba_wartosci) {}
+	dane_iteracji(uint64_t liczba_wartosci = 0, uint64_t liczba_absorberow = 0)
+	: wartosci(liczba_wartosci), wartosci_zaabsorbowane(liczba_absorberow) {}
 
 	dane_iteracji(const dane_iteracji& kopiowane)
-	: wartosci(kopiowane.wartosci), czas(kopiowane.czas){}
+	: wartosci(kopiowane.wartosci), czas(kopiowane.czas),
+	wartosci_zaabsorbowane(kopiowane.wartosci_zaabsorbowane){}
 
 	void zeruj(){
 		wartosci.memset(zero(towar()));
+		wartosci_zaabsorbowane.memset(zero(double()));
 	}
 
 	__host__ typ_prawdopodobienstwa prawdopodobienstwo_suma() const {
@@ -257,18 +287,22 @@ struct dane_iteracji{
 
 	__host__ void cuda_malloc(){
 		wartosci.cuda_malloc();
+		wartosci_zaabsorbowane.cuda_malloc();
 	}
 
 	__host__ void cuda_zanies(cudaStream_t stream){
 		wartosci.cuda_zanies(stream);
+		wartosci_zaabsorbowane.cuda_zanies(stream);
 	}
 
 	__host__ void cuda_przynies(cudaStream_t stream){
 		wartosci.cuda_przynies(stream);
+		wartosci_zaabsorbowane.cuda_przynies(stream);
 	}
 
 	__host__ void cuda_free(){
 		wartosci.cuda_free();
+		wartosci_zaabsorbowane.cuda_free();
 	}
 };
 
@@ -346,11 +380,11 @@ struct spacer_losowy{
 	}
 
 	__host__ void przygotuj_pierwsza_iteracje(){
-		iteracjaA = spacer::dane_iteracji<towar>(trwale.liczba_kubelkow());
+		iteracjaA = spacer::dane_iteracji<towar>(trwale.liczba_kubelkow(), trwale.liczba_absorberow());
 		iteracjaA.zeruj();
 		iteracjaA.czas = 0.0;
 
-		iteracjaB = spacer::dane_iteracji<towar>(trwale.liczba_kubelkow());
+		iteracjaB = spacer::dane_iteracji<towar>(trwale.liczba_kubelkow(), trwale.liczba_absorberow());
 	}
 
 	__host__ void zapisz_iteracje(){		
@@ -377,6 +411,23 @@ struct spacer_losowy{
 			for (uint64_t j = 0; j < trwale.transformaty[wierzcholek.transformer].ile_watkow; j++) {
 				trwale.transformaty[wierzcholek.transformer].transformuj(trwale, wierzcholek, *iteracja_z, *iteracja_do, j);
 			}
+		}
+	}
+
+	// najpierw iteracja
+	__host__ void absorbuj_na_cpu(){
+		spacer::dane_iteracji<towar>* iteracja_z = &iteracjaA;
+		spacer::dane_iteracji<towar>* iteracja_do = &iteracjaB;
+		if (A == false) {
+			iteracja_z = &iteracjaB;
+			iteracja_do = &iteracjaA;
+		}
+
+		for(uint64_t i = 0; i < trwale.liczba_absorberow(); i++){
+			uint64_t indeks_absorbowany = trwale.indeksy_absorbowane[i];
+			towar zaabsorbowane = iteracja_do->wartosci[indeks_absorbowany];
+			iteracja_do->wartosci[indeks_absorbowany] = zero(towar());
+			iteracja_do->wartosci_zaabsorbowane[i] = P(zaabsorbowane) + iteracja_z->wartosci_zaabsorbowane[i];
 		}
 	}
 
@@ -415,6 +466,30 @@ struct spacer_losowy{
 		checkCudaErrors(cudaMemcpyAsync((void*)lokalizacja_na_device, (void*)this, sizeof(spacer_losowy), cudaMemcpyHostToDevice, stream));
 
 		checkCudaErrors(cudaStreamSynchronize(stream));
+	}
+
+	__host__ void zapisz_iteracje_z_cuda(){
+		// Nie synchronizuje
+		ASSERT_Z_ERROR_MSG(lokalizacja_na_device != nullptr, "Nic nie ma na urzadzeniu\n");
+		spacer::dane_iteracji<towar>* zapisywana = &iteracjaB;
+		if (A) zapisywana = &iteracjaA;
+
+		spacer::dane_iteracji<towar>* zapisana = new spacer::dane_iteracji<towar>(trwale.liczba_kubelkow(), trwale.liczba_absorberow());
+		
+		zapisana->wartosci.pamiec_device = zapisywana->wartosci.pamiec_device;
+		zapisana->wartosci.cuda_przynies(stream);
+		zapisana->wartosci.pamiec_device = nullptr;
+
+		zapisana->wartosci_zaabsorbowane.pamiec_device = zapisywana->wartosci_zaabsorbowane.pamiec_device;
+		zapisana->wartosci_zaabsorbowane.cuda_przynies(stream);
+		zapisana->wartosci_zaabsorbowane.pamiec_device = nullptr;
+
+		checkCudaErrors(cudaMemcpyAsync(&(zapisana->czas),
+			A ? &lokalizacja_na_device->iteracjaA.czas : &lokalizacja_na_device->iteracjaB.czas,
+			sizeof(double), cudaMemcpyDeviceToHost, stream));
+
+		ASSERT_Z_ERROR_MSG((iteracje_zapamietane.rozmiar + 1) <= iteracje_zapamietane.rozmiar_zmallocowany, "Brakuje miejsca na kolejna iteracje\n");
+		iteracje_zapamietane.pushback(zapisana);
 	}
 
 	__host__ void cuda_przynies(){
@@ -501,5 +576,5 @@ __host__ void iteruj_na_gpu(spacer_losowy<towar, transformata>& spacer,
 
 template <typename towar, typename transformata>
 __host__ void iteracje_na_gpu(spacer_losowy<towar, transformata>& spacer,
-	uint64_t liczba_iteracji, uint64_t ile_prac_na_watek, uint32_t ile_watkow_na_blok_max);
+	uint64_t liczba_iteracji, uint64_t ile_prac_na_watek, uint32_t ile_watkow_na_blok_max, uint32_t co_ile_zapisac);
 

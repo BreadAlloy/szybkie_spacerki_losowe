@@ -114,6 +114,9 @@
     <ClCompile Include="definicje_typowych_macierzy.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="eksperyment_dwuszczelinowy.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="imgui\imconfig.h">
@@ -219,6 +222,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="definicje_typowych_macierzy.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="eksperyment_dwuszczelinowy.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

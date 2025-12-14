@@ -12,6 +12,8 @@
 
 #include "definicje_typowych_macierzy.h"
 
+#include "eksperyment_dwuszczelinowy.h"
+
 namespace ImPlot{
 template <typename T>
 void PlotLineLepsze(const char* label_id, const double* xs, const T* ys, int count, ImPlotLineFlags flags, int offset, int stride);
@@ -632,7 +634,7 @@ struct test_czasow_wykonania_kwantowy {
 		spacer_gpu.zbuduj_na_cuda();
 		printf("GPU start\n");
 		CZAS_START
-		iteracje_na_gpu<zesp, TMDQ>(spacer_gpu, liczba_iteracji, ile_pracy_na_jeden_watek, max_liczba_watkow_w_bloku);
+		iteracje_na_gpu<zesp, TMDQ>(spacer_gpu, liczba_iteracji, ile_pracy_na_jeden_watek, max_liczba_watkow_w_bloku, -1);
 		CZAS_STOP
 		printf("GPU koniec\n");
 		czas_gpu_ys = diff;
@@ -873,5 +875,255 @@ struct test_sciezki_spaceru_kwantowy_dyskretny {
 	}
 };
 
+struct test_absorbcji {
+	std::string nazwa_okna;
+
+	uint32_t height = 0;
+	uint32_t width = 0;
+
+	double ostatni_czas_odswiezenia = glfwGetTime();
+	float okres_pokazu_slajdow = 1.0f;
+
+	int pokazywana_grafika_cpu = 0;
+	int pokazywana_grafika_gpu = 0;
+
+	int co_ile_zapisac = 1;	
+
+	float skala_obrazu = 1.0f;
+
+	const uint32_t liczba_wierzcholkow_boku = 201;
+	uint32_t liczba_iteracji = 10;
+	uint32_t ile_pracy_na_jeden_watek = 100;
+	uint32_t max_liczba_watkow_w_bloku = 100;
+
+	graf przestrzen;
+	spacer_losowy<zesp, TMDQ> spacer_benchowany;
+
+	spacer_losowy<zesp, TMDQ> spacer_cpu;
+	uint64_t czas_cpu_ys = 0;
+	std::vector<grafika*> grafiki_iteracji_cpu;
+
+	spacer_losowy<zesp, TMDQ> spacer_gpu;
+	uint64_t czas_gpu_ys = 0;
+	std::vector<grafika*> grafiki_iteracji_gpu;
+
+	std::vector<double> prawdopodop_cpu;
+	std::vector<double> prawdopodop_gpu;
+	std::vector<double> czasy_gpu;
+	std::vector<double> czasy_cpu;
+	std::vector<double> pozycje;
+
+	bool ta_sama_grafika = true;
+
+	__host__ test_absorbcji()
+		: nazwa_okna("Test absorbcji")
+		, przestrzen(graf_krata_2D(liczba_wierzcholkow_boku))
+		, spacer_benchowany(spacer_eksperymentu_dwuszczelinowego<zesp, TMDQ>(
+			liczba_wierzcholkow_boku, tensor(X, H), I_3, I_2, &przestrzen))
+		, spacer_cpu(spacer_benchowany)
+		, spacer_gpu(spacer_benchowany) {
+
+		spacer_benchowany.iteracjaA[spacer_benchowany.trwale.wierzcholki[(liczba_wierzcholkow_boku * liczba_wierzcholkow_boku) / 2].start_wartosci] = zero(zesp());
+
+		spacer_benchowany.iteracjaA[spacer_benchowany.trwale.wierzcholki[((liczba_wierzcholkow_boku * liczba_wierzcholkow_boku) / 2) - (liczba_wierzcholkow_boku * liczba_wierzcholkow_boku) / 10 - liczba_wierzcholkow_boku / 4 + 10].start_wartosci] = 0.5;
+		spacer_benchowany.iteracjaA[spacer_benchowany.trwale.wierzcholki[((liczba_wierzcholkow_boku * liczba_wierzcholkow_boku) / 2) - (liczba_wierzcholkow_boku * liczba_wierzcholkow_boku) / 10 - liczba_wierzcholkow_boku / 4 + 10 + liczba_wierzcholkow_boku].start_wartosci] = 0.5;
+
+		spacer_benchowany.iteracjaA[spacer_benchowany.trwale.wierzcholki[((liczba_wierzcholkow_boku * liczba_wierzcholkow_boku) / 2) + (liczba_wierzcholkow_boku * liczba_wierzcholkow_boku) / 10 - liczba_wierzcholkow_boku / 5 - liczba_wierzcholkow_boku / 4 + 10].start_wartosci] = 0.5;
+		spacer_benchowany.iteracjaA[spacer_benchowany.trwale.wierzcholki[((liczba_wierzcholkow_boku * liczba_wierzcholkow_boku) / 2) + (liczba_wierzcholkow_boku * liczba_wierzcholkow_boku) / 10 - liczba_wierzcholkow_boku / 5 - liczba_wierzcholkow_boku / 4 + 10 + liczba_wierzcholkow_boku].start_wartosci] = 0.5;
+
+		spacer_benchowany.zapisz_iteracje();
+
+		pozycje.resize(liczba_wierzcholkow_boku);
+		prawdopodop_cpu.resize(liczba_iteracji + 1);
+		prawdopodop_gpu.resize(liczba_iteracji + 1);
+
+		height = (uint32_t)std::sqrt(spacer_benchowany.trwale.liczba_wierzcholkow());
+		width = (uint32_t)std::sqrt(spacer_benchowany.trwale.liczba_wierzcholkow());
+		ASSERT_Z_ERROR_MSG(height * width == spacer_benchowany.trwale.liczba_wierzcholkow(), "Tego spaceru nie da sie przedstawic jako kwadrat\n");
+
+		przelicz_cpu();
+		przelicz_gpu();
+		for (uint64_t i = 0; i < liczba_wierzcholkow_boku; i++) {
+			pozycje[i] = (double)i;
+		}
+	}
+
+	__host__ uint64_t liczba_zapamietanych_iteracji_cpu() {
+		return spacer_cpu.iteracje_zapamietane.rozmiar;
+	}
+
+	__host__ uint64_t liczba_zapamietanych_iteracji_gpu() {
+		return spacer_gpu.iteracje_zapamietane.rozmiar;
+	}
+
+	__host__ void przelicz_cpu() {
+		printf("\nLiczba iteracji:%d\n", liczba_iteracji);
+		spacer_cpu = spacer_benchowany;
+
+		CZAS_INIT
+			printf("CPU start\n");
+		CZAS_START
+			for (uint64_t i = 0; i < liczba_iteracji; i++) {
+				spacer_cpu.iteracja_na_cpu();
+				spacer_cpu.absorbuj_na_cpu();
+				if(i % co_ile_zapisac == 0){
+					spacer_cpu.zapisz_iteracje();
+				}
+				spacer_cpu.dokoncz_iteracje(1.0);
+			}
+		CZAS_STOP
+			printf("CPU koniec\n");
+		czas_cpu_ys = diff;
+
+		przygotuj_grafiki_cpu();
+	}
+
+	__host__ void przelicz_gpu() {
+		printf("\nLiczba iteracji:%d, Max liczba watkow w bloku:%d, Ile pracy na watek:%d\n", liczba_iteracji, max_liczba_watkow_w_bloku, ile_pracy_na_jeden_watek);
+
+		CZAS_INIT
+		spacer_gpu = spacer_benchowany;
+		spacer_gpu.zbuduj_na_cuda();
+		printf("GPU start\n");
+		CZAS_START
+		//for(uint64_t i = 0; i < liczba_iteracji; i++){
+			iteracje_na_gpu<zesp, TMDQ>(spacer_gpu, liczba_iteracji, ile_pracy_na_jeden_watek, max_liczba_watkow_w_bloku, co_ile_zapisac);
+			//spacer_gpu.cuda_przynies();
+			//spacer_gpu.zapisz_iteracje();
+		//}
+		CZAS_STOP
+			printf("GPU koniec\n");
+		czas_gpu_ys = diff;
+		spacer_gpu.zburz_na_cuda();
+
+		przygotuj_grafiki_gpu();
+	}
+
+	__host__ void przygotuj_grafiki_cpu() {
+		for (auto& g : grafiki_iteracji_cpu) {
+			delete g;
+		}
+
+		grafiki_iteracji_cpu.resize(spacer_cpu.iteracje_zapamietane.rozmiar);
+		czasy_cpu.resize(spacer_cpu.iteracje_zapamietane.rozmiar);
+		prawdopodop_cpu.resize(spacer_cpu.iteracje_zapamietane.rozmiar);
+
+		for (uint64_t i = 0; i < spacer_cpu.iteracje_zapamietane.rozmiar; i++) {
+			spacer::dane_iteracji<zesp>& iteracja = *(spacer_cpu.iteracje_zapamietane[i]);
+			czasy_cpu[i] = iteracja.czas;
+			grafiki_iteracji_cpu[i] = grafika_P_dla_kraty_2D(spacer_cpu,
+				iteracja, width, height, &(prawdopodop_cpu[i]));
+		}
+	}
+
+	__host__ void przygotuj_grafiki_gpu() {
+		for (auto& g : grafiki_iteracji_gpu) {
+			delete g;
+		}
+
+		grafiki_iteracji_gpu.resize(spacer_gpu.iteracje_zapamietane.rozmiar);
+		czasy_gpu.resize(spacer_gpu.iteracje_zapamietane.rozmiar);
+		prawdopodop_gpu.resize(spacer_gpu.iteracje_zapamietane.rozmiar);
+
+		for (uint64_t i = 0; i < spacer_gpu.iteracje_zapamietane.rozmiar; i++) {
+			spacer::dane_iteracji<zesp>& iteracja = *(spacer_gpu.iteracje_zapamietane[i]);
+			czasy_gpu[i] = iteracja.czas;
+			grafiki_iteracji_gpu[i] = grafika_P_dla_kraty_2D(spacer_gpu,
+				iteracja, width, height, &(prawdopodop_gpu[i]));
+		}
+	}
+
+	__host__ void display_images(ImGuiIO&) {
+		grafika* G_cpu = grafiki_iteracji_cpu[pokazywana_grafika_cpu];
+		grafika* G_gpu = grafiki_iteracji_gpu[pokazywana_grafika_gpu];
+		ImGui::Text("CPU: t = %lf", spacer_cpu.iteracje_zapamietane[pokazywana_grafika_cpu]->czas);
+		ImGui::Text("GPU: t = %lf", spacer_gpu.iteracje_zapamietane[pokazywana_grafika_gpu]->czas);
+		ImGui::SliderFloat("Okres pokazu slajdow(1.0 to brak pokazu)", &okres_pokazu_slajdow, 0.01f, 1.0f);
+
+		plot_grafike_dla_kraty_2D(spacer_cpu, pokazywana_grafika_cpu, przestrzen, G_cpu, width, height, skala_obrazu, "spacer cpu");
+		ImGui::SameLine();
+		plot_grafike_dla_kraty_2D(spacer_gpu, pokazywana_grafika_gpu, przestrzen, G_gpu, width, height, skala_obrazu, "spacer gpu");
+
+		ImGui::Text("Czas gpu: %ld ms", czas_gpu_ys / 1000UL);
+		ImGui::Text("Czas cpu: %ld ms", czas_cpu_ys / 1000UL);
+
+		if (okres_pokazu_slajdow < 0.95f) {
+			double czas = glfwGetTime();
+			if (czas > (ostatni_czas_odswiezenia + (double)okres_pokazu_slajdow)) {
+				ostatni_czas_odswiezenia = czas;
+				pokazywana_grafika_cpu = (pokazywana_grafika_cpu + 1) % grafiki_iteracji_cpu.size();
+				pokazywana_grafika_gpu = (pokazywana_grafika_gpu + 1) % grafiki_iteracji_gpu.size();
+			}
+		}
+		else {
+			ostatni_czas_odswiezenia = glfwGetTime();
+		}
+		if (ta_sama_grafika) {
+			int minimum = MIN(pokazywana_grafika_cpu, pokazywana_grafika_gpu);
+			pokazywana_grafika_cpu = minimum;
+			pokazywana_grafika_gpu = minimum;
+		}
+	}
+
+	__host__ void pokaz_wykresy(ImGuiIO&) {
+		if (ImPlot::BeginPlot("##Dane w spacerze", ImVec2(skala_obrazu * 200.0f, skala_obrazu * 200.0f))) {
+			ImPlot::PlotInfLines("Vertical pomocnik cpu", &czasy_cpu[pokazywana_grafika_cpu], 1);
+			ImPlot::PlotInfLines("Vertical pomocnik gpu", &czasy_gpu[pokazywana_grafika_gpu], 1);
+
+			ImPlot::PlotLine("Pozostale cpu", czasy_cpu.data(), prawdopodop_cpu.data(), (int)liczba_zapamietanych_iteracji_cpu());
+			ImPlot::PlotLine("Pozostale gpu", czasy_gpu.data(), prawdopodop_gpu.data(), (int)liczba_zapamietanych_iteracji_gpu());
+			//ImPlot::PlotLineLepsze("Kat Re", czasy.data(), (double*)katy.data(), (int)liczba_zapamietanych_iteracji(), 0, 0, sizeof(zesp));
+			//ImPlot::PlotLineLepsze("Kat Im", czasy.data(), (double*)katy.data() + 1, (int)liczba_zapamietanych_iteracji(), 0, 0, sizeof(zesp));
+			//ImPlot::PlotLine("Kat norma", czasy.data(), katy_norm.data(), (int)liczba_zapamietanych_iteracji());
+			ImPlot::EndPlot();
+		}
+		ImGui::SameLine();
+		if (ImPlot::BeginPlot("##Dane w spacerze 2", ImVec2(skala_obrazu * 200.0f, skala_obrazu * 200.0f))) {
+			//ImPlot::PlotLineLepsze("Zaabsorbowane cpu", pozycje.data(), &(spacer_cpu.trwale.absorbery[0].suma_zaabsorbowanego), (int)liczba_wierzcholkow_boku, 0, 0, sizeof(spacer::absorber));
+			//ImPlot::PlotLineLepsze("Zaabsorbowane gpu", pozycje.data(), &(spacer_gpu.trwale.absorbery[0].suma_zaabsorbowanego), (int)liczba_wierzcholkow_boku, 0, 0, sizeof(spacer::absorber));
+
+			ImPlot::PlotLineLepsze("Zaabsorbowane cpu", pozycje.data(), spacer_cpu.iteracje_zapamietane[pokazywana_grafika_cpu]->wartosci_zaabsorbowane.PAMIEC, (int)liczba_wierzcholkow_boku, 0, 0, sizeof(double));
+			ImPlot::PlotLineLepsze("Zaabsorbowane gpu", pozycje.data(), spacer_gpu.iteracje_zapamietane[pokazywana_grafika_gpu]->wartosci_zaabsorbowane.PAMIEC, (int)liczba_wierzcholkow_boku, 0, 0, sizeof(double));
+			//ImPlot::PlotLine("Zaabsorbowane cpu teraz", &(spacer_cpu.trwale.absorbery[0].suma_zaabsorbowanego), (int)liczba_wierzcholkow_boku, 0, 0, sizeof(spacer::absorber));
+
+			//ImPlot::PlotLineLepsze("Kat Re", czasy.data(), (double*)katy.data(), (int)liczba_zapamietanych_iteracji(), 0, 0, sizeof(zesp));
+			//ImPlot::PlotLineLepsze("Kat Im", czasy.data(), (double*)katy.data() + 1, (int)liczba_zapamietanych_iteracji(), 0, 0, sizeof(zesp));
+			//ImPlot::PlotLine("Kat norma", czasy.data(), katy_norm.data(), (int)liczba_zapamietanych_iteracji());
+			ImPlot::EndPlot();
+		}
+	}
+
+	__host__ void pokaz_okno(ImGuiIO& io) {
+		ImGui::Begin(nazwa_okna.c_str());
+		ImGui::SliderFloat("Rozmiar grafiki", &skala_obrazu, 0.0f, 10.0f);
+		ImGui::SliderInt("Ktora grafika cpu jest pokazywana", &pokazywana_grafika_cpu, 0, (int)liczba_zapamietanych_iteracji_cpu() - 1);
+		ImGui::SliderInt("Ktora grafika gpu jest pokazywana", &pokazywana_grafika_gpu, 0, (int)liczba_zapamietanych_iteracji_gpu() - 1);
+		ImGui::SliderInt("Liczba iteracji", (int*)&liczba_iteracji, 1, 100000);
+		ImGui::SliderInt("Co ile zapisac", &co_ile_zapisac, 1, liczba_iteracji);
+		ImGui::SliderInt("Ile pracy na jeden watek", (int*)&ile_pracy_na_jeden_watek, 1, 200);
+		ImGui::SliderInt("Max liczba watkow w bloku", (int*)&max_liczba_watkow_w_bloku, 1, 900);
+		if (ImGui::Button("Przelicz cpu")) {
+			przelicz_cpu();
+		}
+		ImGui::SameLine();
+		if (ImGui::Button("Przelicz gpu")) {
+			przelicz_gpu();
+		}
+		ImGui::SameLine();
+		ImGui::Checkbox("Ta sama grafika cpi i gpu", &ta_sama_grafika);
+		display_images(io);
+		pokaz_wykresy(io);
+		ImGui::End();
+	}
+
+	__host__ ~test_absorbcji() {
+		for (auto g : grafiki_iteracji_cpu) {
+			delete g;
+		}
+		for (auto g : grafiki_iteracji_gpu) {
+			delete g;
+		}
+	}
+};
 
 

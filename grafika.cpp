@@ -71,6 +71,8 @@ __host__ void plot_grafike_dla_kraty_2D(spacer_losowy<towar, transformata>& spac
 			if (i < width && j < height && ImGui::BeginItemTooltip()) {
 				spacer::wierzcholek& w = spacer.trwale.wierzcholki[i + j * width];
 				spacer::dane_iteracji<towar>& iteracja = *(spacer.iteracje_zapamietane[pokazywana_grafika]);
+				ImGui::Text("Wierzcholek o indeksie: %d\n", i + j * width);
+				ImGui::Text("Indeksy wartosci %ld - %ld\n", w.start_wartosci, w.start_wartosci+w.liczba_kierunkow);
 				ImGui::Text("Szczegoly wierzcholka: %s", przestrzen.wierzcholki[i + j * width].opis.c_str());
 				pokaz_transformate(spacer.trwale.transformaty[w.transformer]);
 				pokaz_stan(estetyczny_wektor<towar>(&(iteracja[w.start_wartosci]), w.liczba_kierunkow));

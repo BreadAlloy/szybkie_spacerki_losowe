@@ -94,6 +94,30 @@ __global__ void iteracja_na_gpu(spacer_losowy<towar, transformata>* lokalizacja_
 }
 
 template <typename towar, typename transformata>
+__global__ void absorbuj_na_gpu(spacer_losowy<towar, transformata>* lokalizacja_na_device, uint64_t ile_watkow_na_blok, uint64_t ile_blokow, uint64_t ile_prac_wykonac){
+	spacer::dane_trwale<transformata>& trwale = lokalizacja_na_device->trwale;
+
+	spacer::dane_iteracji<towar>* iteracja_z = &lokalizacja_na_device->iteracjaA;
+	spacer::dane_iteracji<towar>* iteracja_do = &lokalizacja_na_device->iteracjaB;
+	if (lokalizacja_na_device->A == false) {
+		iteracja_z = &lokalizacja_na_device->iteracjaB;
+		iteracja_do = &lokalizacja_na_device->iteracjaA;
+	}
+
+	for (uint64_t j = 0; j < ile_prac_wykonac; j++) {
+		uint64_t index_pracownika = ile_watkow_na_blok * (ile_prac_wykonac * blockIdx.x + j) + threadIdx.x;
+
+		if(index_pracownika >= trwale.liczba_absorberow()){
+			break;
+		}
+		uint64_t indeks_absorbowany = trwale.indeksy_absorbowane[index_pracownika];
+		towar zaabsorbowane = iteracja_do->wartosci[indeks_absorbowany];
+		iteracja_do->wartosci[indeks_absorbowany] = zero(towar());
+		iteracja_do->wartosci_zaabsorbowane[index_pracownika] = P(zaabsorbowane) + iteracja_z->wartosci_zaabsorbowane[index_pracownika];
+	}
+}
+
+template <typename towar, typename transformata>
 __global__ void zakoncz_iteracje(spacer_losowy<towar, transformata>* lokalizacja_na_device){ //na jeden watek w jednym bloku
 	lokalizacja_na_device->dokoncz_iteracje(1.0);
 }
@@ -114,15 +138,26 @@ template __host__ void iteruj_na_gpu<zesp, TMDQ>(spacer_losowy<zesp, TMDQ>& spac
 
 template <typename towar, typename transformata>
 __host__ void iteracje_na_gpu(spacer_losowy<towar, transformata>& spacer,
-	uint64_t liczba_iteracji, uint64_t ile_prac_na_watek, uint32_t ile_watkow_na_blok_max) {
+	uint64_t liczba_iteracji, uint64_t ile_prac_na_watek, uint32_t ile_watkow_na_blok_max, uint32_t co_ile_zapisac) {
 
 	uint64_t ile_prac = spacer.trwale.ile_prac();
 	uint64_t ile_watkow_sumarycznie = ile_prac / ile_prac_na_watek + 1;
 	uint64_t ile_blokow = ile_watkow_sumarycznie / ile_watkow_na_blok_max + 1;
 	uint64_t ile_watkow = ile_watkow_sumarycznie / ile_blokow + 1;
 
+	uint64_t ile_prac_absorbcja = spacer.trwale.liczba_absorberow();
+	uint64_t ile_watkow_sumarycznie_absorbcja = ile_prac_absorbcja / ile_prac_na_watek + 1;
+	uint64_t ile_blokow_absorbcja = ile_watkow_sumarycznie_absorbcja / ile_watkow_na_blok_max + 1;
+	uint64_t ile_watkow_absorbcja = ile_watkow_sumarycznie_absorbcja / ile_blokow_absorbcja + 1;
+
 	for(uint32_t i = 0; i < liczba_iteracji; i++){
 		iteracja_na_gpu<towar, transformata><<<ile_blokow, ile_watkow, 0, spacer.stream>>>(spacer.lokalizacja_na_device, ile_watkow, ile_blokow, ile_prac_na_watek);
+		if(i % co_ile_zapisac == 0){
+			spacer.zapisz_iteracje_z_cuda();
+		}
+		checkCudaErrors(cudaStreamSynchronize(spacer.stream));
+		absorbuj_na_gpu<towar, transformata><<<ile_blokow_absorbcja, ile_watkow_absorbcja, 0, spacer.stream >> > (spacer.lokalizacja_na_device, ile_watkow_absorbcja, ile_blokow_absorbcja, ile_prac_na_watek);
+		spacer.dokoncz_iteracje(1.0);
 		checkCudaErrors(cudaStreamSynchronize(spacer.stream));
 		zakoncz_iteracje<towar, transformata><<<1, 1, 0, spacer.stream>>>(spacer.lokalizacja_na_device);
 		checkCudaErrors(cudaStreamSynchronize(spacer.stream));
@@ -131,7 +166,7 @@ __host__ void iteracje_na_gpu(spacer_losowy<towar, transformata>& spacer,
 }
 
 template __host__ void iteracje_na_gpu<zesp, TMDQ>(spacer_losowy<zesp, TMDQ>& spacer,
-	uint64_t liczba_iteracji, uint64_t ile_prac_na_watek, uint32_t ile_watkow_na_blok_max);
+	uint64_t liczba_iteracji, uint64_t ile_prac_na_watek, uint32_t ile_watkow_na_blok_max, uint32_t co_ile_zapisac);
 
 __HD__ void testy_macierzy() {
 	transformata_macierz<double> t1(1.0);
