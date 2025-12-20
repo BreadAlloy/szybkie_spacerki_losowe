@@ -36,7 +36,7 @@ __global__ void iteracje_na_gpu(spacer_losowy<towar, transformata>* lokalizacja_
 	
 			spacer::wierzcholek& wierzcholek = trwale.wierzcholki[index_wierzcholka];
 
-			trwale.transformaty[wierzcholek.transformer].transformuj(trwale, wierzcholek, *iteracja_z, *iteracja_do, index_w_wierzcholku);
+			trwale.transformaty[wierzcholek.transformer].transformuj(trwale, wierzcholek, *iteracja_z, *iteracja_do, index_w_wierzcholku, index_wierzcholka);
 		}
 		__syncthreads();
 		if(threadIdx.x == 0 && blockIdx.x == 0) lokalizacja_na_device->dokoncz_iteracje(1.0);
@@ -89,12 +89,13 @@ __global__ void iteracja_na_gpu(spacer_losowy<towar, transformata>* lokalizacja_
 
 		spacer::wierzcholek& wierzcholek = trwale.wierzcholki[index_wierzcholka];
 
-		trwale.transformaty[wierzcholek.transformer].transformuj(trwale, wierzcholek, *iteracja_z, *iteracja_do, index_w_wierzcholku);
+		trwale.transformaty[wierzcholek.transformer].transformuj(trwale, wierzcholek, *iteracja_z, *iteracja_do, index_w_wierzcholku, index_wierzcholka);
 	}
 }
 
 template <typename towar, typename transformata>
-__global__ void absorbuj_na_gpu(spacer_losowy<towar, transformata>* lokalizacja_na_device, uint64_t ile_watkow_na_blok, uint64_t ile_blokow, uint64_t ile_prac_wykonac){
+__global__ void absorbuj_na_gpu(spacer_losowy<towar, transformata>* lokalizacja_na_device, double procent_absorbowany,
+	uint64_t ile_watkow_na_blok, uint64_t ile_blokow, uint64_t ile_prac_wykonac){
 	spacer::dane_trwale<transformata>& trwale = lokalizacja_na_device->trwale;
 
 	spacer::dane_iteracji<towar>* iteracja_z = &lokalizacja_na_device->iteracjaA;
@@ -104,6 +105,9 @@ __global__ void absorbuj_na_gpu(spacer_losowy<towar, transformata>* lokalizacja_
 		iteracja_do = &lokalizacja_na_device->iteracjaA;
 	}
 
+	double norma_zabranego = NORMA(1.0, procent_absorbowany, towar());
+	double norma_pozostawionego = NORMA(1.0, 1.0 - procent_absorbowany, towar());
+
 	for (uint64_t j = 0; j < ile_prac_wykonac; j++) {
 		uint64_t index_pracownika = ile_watkow_na_blok * (ile_prac_wykonac * blockIdx.x + j) + threadIdx.x;
 
@@ -111,15 +115,117 @@ __global__ void absorbuj_na_gpu(spacer_losowy<towar, transformata>* lokalizacja_
 			break;
 		}
 		uint64_t indeks_absorbowany = trwale.indeksy_absorbowane[index_pracownika];
-		towar zaabsorbowane = iteracja_do->wartosci[indeks_absorbowany];
-		iteracja_do->wartosci[indeks_absorbowany] = zero(towar());
+		towar zaabsorbowane = iteracja_do->wartosci[indeks_absorbowany] * norma_zabranego;
+		iteracja_do->wartosci[indeks_absorbowany] *= norma_pozostawionego;
 		iteracja_do->wartosci_zaabsorbowane[index_pracownika] = P(zaabsorbowane) + iteracja_z->wartosci_zaabsorbowane[index_pracownika];
 	}
 }
 
+// na jeden blok
+template <typename towar>
+__global__ void suma_prawdopodobienstwa_gpu(statyczny_wektor<towar>* wektor, double* gdzie_zapisac, const uint64_t ile_watkow, const uint64_t ile_prac_wykonac) {
+	__shared__ double wspolne[1024];
+
+	double wysumowane = 0.0;
+	for (uint64_t j = 0; j < ile_prac_wykonac; j++) {
+		uint64_t index_pracownika = ile_watkow * j + threadIdx.x; // moze da sie zrobic lepsza kolejnosc
+
+		if (index_pracownika >= wektor->rozmiar) {
+			break;
+		}
+		wysumowane += P(wektor->operator[](index_pracownika));
+	}
+	wspolne[threadIdx.x] = wysumowane;
+
+	__syncthreads();
+	if(threadIdx.x == 0){
+		double finalna_suma = 0.0;
+		for(uint64_t i = 0; i < ile_watkow; i++){
+			finalna_suma += wspolne[i];
+		}
+		(*gdzie_zapisac) = finalna_suma;
+	}
+}
+
+// na jeden blok
+template <typename towar>
+__global__ void suma_gpu(statyczny_wektor<towar>* wektor, double* gdzie_zapisac,
+	const uint64_t ile_watkow, const uint64_t ile_prac_wykonac) {
+	__shared__ double wspolne[1024];
+
+	double wysumowane = 0.0;
+	for (uint64_t j = 0; j < ile_prac_wykonac; j++) {
+		uint64_t index_pracownika = ile_watkow * j + threadIdx.x; // moze da sie zrobic lepsza kolejnosc
+
+		if (index_pracownika >= wektor->rozmiar) {
+			break;
+		}
+		wysumowane += wektor->operator[](index_pracownika);
+	}
+	wspolne[threadIdx.x] = wysumowane;
+
+	__syncthreads();
+	if (threadIdx.x == 0) {
+		double finalna_suma = 0.0;
+		for (uint64_t i = 0; i < ile_watkow; i++) {
+			finalna_suma += wspolne[i];
+		}
+		(*gdzie_zapisac) = finalna_suma;
+	}
+}
+
 template <typename towar, typename transformata>
-__global__ void zakoncz_iteracje(spacer_losowy<towar, transformata>* lokalizacja_na_device){ //na jeden watek w jednym bloku
-	lokalizacja_na_device->dokoncz_iteracje(1.0);
+__host__ void przygotuj_do_normalizacji(spacer_losowy<towar, transformata>& spacer, uint64_t ile_pracy_na_normalizatora){
+	spacer::dane_iteracji<towar>* iteracja_z = &spacer.iteracjaA;
+	spacer::dane_iteracji<towar>* iteracja_do = &spacer.iteracjaB;
+	spacer::dane_iteracji<towar>* device_iteracja_z = &(spacer.lokalizacja_na_device->iteracjaA);
+	spacer::dane_iteracji<towar>* device_iteracja_do = &(spacer.lokalizacja_na_device->iteracjaB);
+	if (spacer.A == false) {
+		iteracja_z = &spacer.iteracjaB;
+		iteracja_do = &spacer.iteracjaA;
+		device_iteracja_z = &(spacer.lokalizacja_na_device->iteracjaB);
+		device_iteracja_do = &(spacer.lokalizacja_na_device->iteracjaA);
+	}
+	
+	uint64_t ile_sumy_prawdopodobienstwa = iteracja_z->wartosci.rozmiar;
+	uint64_t ile_sumy_zaabsorbowanego = iteracja_z->wartosci_zaabsorbowane.rozmiar;
+
+	uint64_t ile_sumatorow_prawdopodobienstwa = ile_sumy_prawdopodobienstwa / ile_pracy_na_normalizatora + 1L;
+	uint64_t ile_sumatorow_zaabsorbowanego = ile_sumy_zaabsorbowanego / ile_pracy_na_normalizatora + 1L;
+
+	suma_prawdopodobienstwa_gpu<towar><<<1, (uint32_t)ile_sumatorow_prawdopodobienstwa, 0, spacer.stream>>>(
+		&(device_iteracja_z->wartosci), &(device_iteracja_do->prawdopodobienstwo_poprzedniej),
+		ile_sumatorow_prawdopodobienstwa, ile_pracy_na_normalizatora
+	);
+
+	suma_gpu<double><<<1, (uint32_t)ile_sumatorow_zaabsorbowanego, 0, spacer.stream>>>(
+		&(device_iteracja_z->wartosci_zaabsorbowane), &(device_iteracja_do->zaabsorbowane_poprzedniej),
+		ile_sumatorow_zaabsorbowanego, ile_pracy_na_normalizatora
+	);
+
+}
+
+template <typename towar, typename transformata>
+__global__ void policz_wspolczynnik_normalizacji(spacer_losowy<towar, transformata>* lokalizacja_na_device) { //na jeden watek w jednym bloku
+	spacer::dane_iteracji<towar>* iteracja_z = &lokalizacja_na_device->iteracjaA;
+	spacer::dane_iteracji<towar>* iteracja_do = &lokalizacja_na_device->iteracjaB;
+	if (lokalizacja_na_device->A == false) {
+		iteracja_z = &lokalizacja_na_device->iteracjaB;
+		iteracja_do = &lokalizacja_na_device->iteracjaA;
+	}
+
+	double powinno_byc = lokalizacja_na_device->trwale.poczatkowe_prawdopodobienstwo - iteracja_do->zaabsorbowane_poprzedniej;
+	iteracja_do->norma_poprzedniej_iteracji = NORMA(iteracja_do->prawdopodobienstwo_poprzedniej, powinno_byc, towar());
+}
+
+template <typename towar, typename transformata>
+__global__ void zakoncz_iteracje(spacer_losowy<towar, transformata>* lokalizacja_na_device, double delta_t) { //na jeden watek w jednym bloku
+	lokalizacja_na_device->dokoncz_iteracje(delta_t);
+}
+
+template <typename towar, typename transformata>
+__global__ void nie_normalizuj(spacer_losowy<towar, transformata>* lokalizacja_na_device) { //na jeden watek w jednym bloku
+	lokalizacja_na_device->nie_normalizuj();
 }
 
 template <typename towar, typename transformata>
@@ -128,7 +234,7 @@ __host__ void iteruj_na_gpu(spacer_losowy<towar, transformata>& spacer,
 
 	uint64_t ile_prac = spacer.trwale.ile_prac();
 	uint64_t ile_prac_na_watek = ile_prac / liczba_watkow + 1;
-	iteracje_na_gpu<towar, transformata><<<1, liczba_watkow, 0, spacer.stream>>>(spacer.lokalizacja_na_device, liczba_watkow, liczba_iteracji, ile_prac_na_watek);
+	iteracje_na_gpu<towar, transformata><<<1, (uint32_t)liczba_watkow, 0, spacer.stream>>>(spacer.lokalizacja_na_device, liczba_watkow, liczba_iteracji, ile_prac_na_watek);
 	checkCudaErrors(cudaStreamSynchronize(spacer.stream));
 	checkCudaErrors(cudaGetLastError());
 }
@@ -137,8 +243,8 @@ template __host__ void iteruj_na_gpu<zesp, TMDQ>(spacer_losowy<zesp, TMDQ>& spac
 	uint64_t liczba_iteracji, uint64_t liczba_watkow);
 
 template <typename towar, typename transformata>
-__host__ void iteracje_na_gpu(spacer_losowy<towar, transformata>& spacer,
-	uint64_t liczba_iteracji, uint64_t ile_prac_na_watek, uint32_t ile_watkow_na_blok_max, uint32_t co_ile_zapisac) {
+__host__ void iteracje_na_gpu(spacer_losowy<towar, transformata>& spacer, double delta_t,
+	uint64_t liczba_iteracji, uint64_t ile_prac_na_watek, uint32_t ile_watkow_na_blok_max, uint32_t co_ile_zapisac, uint32_t co_ile_normalizuj, uint32_t co_ile_absorbuj) {
 
 	uint64_t ile_prac = spacer.trwale.ile_prac();
 	uint64_t ile_watkow_sumarycznie = ile_prac / ile_prac_na_watek + 1;
@@ -151,22 +257,43 @@ __host__ void iteracje_na_gpu(spacer_losowy<towar, transformata>& spacer,
 	uint64_t ile_watkow_absorbcja = ile_watkow_sumarycznie_absorbcja / ile_blokow_absorbcja + 1;
 
 	for(uint32_t i = 0; i < liczba_iteracji; i++){
-		iteracja_na_gpu<towar, transformata><<<ile_blokow, ile_watkow, 0, spacer.stream>>>(spacer.lokalizacja_na_device, ile_watkow, ile_blokow, ile_prac_na_watek);
+		
+		iteracja_na_gpu<towar, transformata><<<(uint32_t)ile_blokow, (uint32_t)ile_watkow, 0, spacer.stream>>>(spacer.lokalizacja_na_device, ile_watkow, ile_blokow, ile_prac_na_watek);
+		if(i % co_ile_normalizuj == 0) {
+			przygotuj_do_normalizacji<towar, transformata>(spacer, 100);
+		} else {
+			nie_normalizuj<towar, transformata><<<1, 1, 0, spacer.stream>>>(spacer.lokalizacja_na_device);
+		}
 		if(i % co_ile_zapisac == 0){
 			spacer.zapisz_iteracje_z_cuda();
 		}
 		checkCudaErrors(cudaStreamSynchronize(spacer.stream));
-		absorbuj_na_gpu<towar, transformata><<<ile_blokow_absorbcja, ile_watkow_absorbcja, 0, spacer.stream >> > (spacer.lokalizacja_na_device, ile_watkow_absorbcja, ile_blokow_absorbcja, ile_prac_na_watek);
-		spacer.dokoncz_iteracje(1.0);
+		
+		if(i % co_ile_absorbuj == 0){
+			absorbuj_na_gpu<towar, transformata><<<(uint32_t)ile_blokow_absorbcja, (uint32_t)ile_watkow_absorbcja, 0, spacer.stream>>> (
+			spacer.lokalizacja_na_device, 1.0, ile_watkow_absorbcja, ile_blokow_absorbcja, ile_prac_na_watek);
+		} else {
+			absorbuj_na_gpu<towar, transformata><<<(uint32_t)ile_blokow_absorbcja, (uint32_t)ile_watkow_absorbcja, 0, spacer.stream>>> (
+			spacer.lokalizacja_na_device, 0.0, ile_watkow_absorbcja, ile_blokow_absorbcja, ile_prac_na_watek);
+		}
+		if (i % co_ile_normalizuj == 0) {
+			policz_wspolczynnik_normalizacji<towar, transformata><<<1, 1, 0, spacer.stream>>>(spacer.lokalizacja_na_device);
+		}
 		checkCudaErrors(cudaStreamSynchronize(spacer.stream));
-		zakoncz_iteracje<towar, transformata><<<1, 1, 0, spacer.stream>>>(spacer.lokalizacja_na_device);
+		
+		zakoncz_iteracje<towar, transformata><<<1, 1, 0, spacer.stream>>>(spacer.lokalizacja_na_device, delta_t);
+		spacer.dokoncz_iteracje(delta_t);
 		checkCudaErrors(cudaStreamSynchronize(spacer.stream));
+
 		checkCudaErrors(cudaGetLastError());
 	}
 }
 
-template __host__ void iteracje_na_gpu<zesp, TMDQ>(spacer_losowy<zesp, TMDQ>& spacer,
-	uint64_t liczba_iteracji, uint64_t ile_prac_na_watek, uint32_t ile_watkow_na_blok_max, uint32_t co_ile_zapisac);
+template __host__ void iteracje_na_gpu<zesp, TMDQ>(spacer_losowy<zesp, TMDQ>& spacer, double delta_t,
+	uint64_t liczba_iteracji, uint64_t ile_prac_na_watek, uint32_t ile_watkow_na_blok_max, uint32_t co_ile_zapisac, uint32_t co_ile_normalizuj, uint32_t co_ile_absorbuj);
+
+template __host__ void iteracje_na_gpu<zesp, TMCQ>(spacer_losowy<zesp, TMCQ>& spacer, double delta_t,
+	uint64_t liczba_iteracji, uint64_t ile_prac_na_watek, uint32_t ile_watkow_na_blok_max, uint32_t co_ile_zapisac, uint32_t co_ile_normalizuj, uint32_t co_ile_absorbuj);
 
 __HD__ void testy_macierzy() {
 	transformata_macierz<double> t1(1.0);

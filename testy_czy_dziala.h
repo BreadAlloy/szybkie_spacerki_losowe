@@ -149,7 +149,6 @@ struct test_spaceru_klasyczny_dyskretny{
 	}
 };
 
-
 struct test_spaceru_kwantowy_dyskretny {
 	std::vector<grafika*> grafiki_iteracji;
 	grafika* celownik = nullptr;
@@ -428,6 +427,7 @@ struct test_spaceru_kwantowy_ciagly {
 	float okres_pokazu_slajdow = 1.0f;
 
 	int pokazywana_grafika = 0;
+	int co_ile_normalizuj = 1;
 	float skala_obrazu = 1.0f;
 
 	std::vector<zesp> katy;
@@ -435,15 +435,9 @@ struct test_spaceru_kwantowy_ciagly {
 	std::vector<double> prawdopodop;
 	std::vector<double> czasy;
 
-	zesp macierz3x3[9] = { 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0 };
-	zesp macierz4x4[16] = { 0.5,  0.5,  0.5,  0.5,
-							0.5, -0.5,  0.5, -0.5,
-							0.5,  0.5, -0.5, -0.5,
-							0.5, -0.5, -0.5,  0.5 };
-
 	const uint32_t liczba_wierzcholkow_boku = 21;
-	const uint32_t liczba_iteracji = 100000;
-	const uint32_t jak_czesto_zapisac = 25;
+	const uint32_t liczba_iteracji = 5000;
+	const uint32_t jak_czesto_zapisac = 1;
 
 	graf przestrzen;
 	spacer_losowy<zesp, TMCQ> spacer;
@@ -451,14 +445,21 @@ struct test_spaceru_kwantowy_ciagly {
 	__host__ test_spaceru_kwantowy_ciagly()
 		: nazwa_okna("Test spaceru kwantowego ciagly")
 		, przestrzen(graf_krata_2D(liczba_wierzcholkow_boku))
-		, spacer(spacer_krata_2D<zesp, TMCQ>(liczba_wierzcholkow_boku, transformata_macierz<zesp>(4, macierz4x4), transformata_macierz<zesp>(3, macierz3x3), transformata_macierz<zesp>(1.0, 0.0, 0.0, 1.0), &przestrzen)) {
+		, spacer(spacer_krata_2D<zesp, TMCQ>(liczba_wierzcholkow_boku, HxH, I_3, I_2, &przestrzen)) {
 
-		spacer.iteracjaA[spacer.trwale.wierzcholki[(liczba_wierzcholkow_boku * liczba_wierzcholkow_boku) / 2].start_wartosci] = jeden(zesp()) / std::sqrt(2.0);
-		spacer.iteracjaA[spacer.trwale.wierzcholki[((liczba_wierzcholkow_boku * liczba_wierzcholkow_boku) / 2) + 1].start_wartosci + 2] = jeden(zesp()) / std::sqrt(2.0);
+		spacer.iteracjaA[spacer.trwale.wierzcholki[(liczba_wierzcholkow_boku * liczba_wierzcholkow_boku) / 2].start_wartosci] = jeden(zesp());// std::sqrt(2.0);
+		//spacer.iteracjaA[spacer.trwale.wierzcholki[((liczba_wierzcholkow_boku * liczba_wierzcholkow_boku) / 2) + 1].start_wartosci + 2] = jeden(zesp()) / std::sqrt(2.0);
 
 		spacer.zapisz_iteracje();
 		for (uint64_t i = 1; i < liczba_iteracji; i++) {
+			//spacer.zapisz_iteracje();
 			spacer.iteracja_na_cpu();
+			//spacer.zaaplikuj_wspolczynniki_normalizacji();
+			if (i % co_ile_normalizuj == 0) {
+				spacer.policz_wspolczynnik_normalizacji();
+				//spacer.normalizuj_w_miejscu();
+				//spacer.policz_wspolczynnik_normalizacji();
+			}
 			spacer.dokoncz_iteracje(dt);
 			if ((i % jak_czesto_zapisac) == 0) {
 				spacer.zapisz_iteracje();
@@ -550,7 +551,6 @@ struct test_spaceru_kwantowy_ciagly {
 	}
 };
 
-
 struct test_czasow_wykonania_kwantowy {
 	std::string nazwa_okna;
 
@@ -634,7 +634,7 @@ struct test_czasow_wykonania_kwantowy {
 		spacer_gpu.zbuduj_na_cuda();
 		printf("GPU start\n");
 		CZAS_START
-		iteracje_na_gpu<zesp, TMDQ>(spacer_gpu, liczba_iteracji, ile_pracy_na_jeden_watek, max_liczba_watkow_w_bloku, -1);
+		iteracje_na_gpu<zesp, TMDQ>(spacer_gpu, 1.0, liczba_iteracji, ile_pracy_na_jeden_watek, max_liczba_watkow_w_bloku, -1);
 		CZAS_STOP
 		printf("GPU koniec\n");
 		czas_gpu_ys = diff;
@@ -724,6 +724,8 @@ struct test_czasow_wykonania_kwantowy {
 	}
 };
 
+// Niekoniecznie bêdzie dzia³aæ w przysz³oœci
+#if 0
 struct test_sciezki_spaceru_kwantowy_dyskretny {
 	std::vector<grafika*> grafiki_iteracji;
 	grafika* celownik = nullptr;
@@ -874,6 +876,7 @@ struct test_sciezki_spaceru_kwantowy_dyskretny {
 		}
 	}
 };
+#endif
 
 struct test_absorbcji {
 	std::string nazwa_okna;
@@ -888,22 +891,24 @@ struct test_absorbcji {
 	int pokazywana_grafika_gpu = 0;
 
 	int co_ile_zapisac = 1;	
+	int co_ile_normalizuj = 1;
+	int co_ile_absorbuj = 1;
 
 	float skala_obrazu = 1.0f;
 
-	const uint32_t liczba_wierzcholkow_boku = 201;
-	uint32_t liczba_iteracji = 10;
-	uint32_t ile_pracy_na_jeden_watek = 100;
-	uint32_t max_liczba_watkow_w_bloku = 100;
+	const uint32_t liczba_wierzcholkow_boku = 101;
+	uint32_t liczba_iteracji = 50;
+	uint32_t ile_pracy_na_jeden_watek = 30;
+	uint32_t max_liczba_watkow_w_bloku = 500;
 
 	graf przestrzen;
-	spacer_losowy<zesp, TMDQ> spacer_benchowany;
+	spacer_losowy<zesp, TMCQ> spacer_benchowany;
 
-	spacer_losowy<zesp, TMDQ> spacer_cpu;
+	spacer_losowy<zesp, TMCQ> spacer_cpu;
 	uint64_t czas_cpu_ys = 0;
 	std::vector<grafika*> grafiki_iteracji_cpu;
 
-	spacer_losowy<zesp, TMDQ> spacer_gpu;
+	spacer_losowy<zesp, TMCQ> spacer_gpu;
 	uint64_t czas_gpu_ys = 0;
 	std::vector<grafika*> grafiki_iteracji_gpu;
 
@@ -913,23 +918,31 @@ struct test_absorbcji {
 	std::vector<double> czasy_cpu;
 	std::vector<double> pozycje;
 
-	bool ta_sama_grafika = true;
+	bool ta_sama_grafika = false;
+
+	//mnoz(FK, mnoz(HxH, mnoz(FK, std_kierunki_krata)))
 
 	__host__ test_absorbcji()
 		: nazwa_okna("Test absorbcji")
 		, przestrzen(graf_krata_2D(liczba_wierzcholkow_boku))
-		, spacer_benchowany(spacer_eksperymentu_dwuszczelinowego<zesp, TMDQ>(
+		, spacer_benchowany(spacer_eksperymentu_dwuszczelinowego<zesp, TMCQ>(
 			liczba_wierzcholkow_boku, tensor(X, H), I_3, I_2, &przestrzen))
 		, spacer_cpu(spacer_benchowany)
 		, spacer_gpu(spacer_benchowany) {
 
+		// mnoz(std_kierunki_krata, HxH)
+
 		spacer_benchowany.iteracjaA[spacer_benchowany.trwale.wierzcholki[(liczba_wierzcholkow_boku * liczba_wierzcholkow_boku) / 2].start_wartosci] = zero(zesp());
 
-		spacer_benchowany.iteracjaA[spacer_benchowany.trwale.wierzcholki[((liczba_wierzcholkow_boku * liczba_wierzcholkow_boku) / 2) - (liczba_wierzcholkow_boku * liczba_wierzcholkow_boku) / 10 - liczba_wierzcholkow_boku / 4 + 10].start_wartosci] = 0.5;
-		spacer_benchowany.iteracjaA[spacer_benchowany.trwale.wierzcholki[((liczba_wierzcholkow_boku * liczba_wierzcholkow_boku) / 2) - (liczba_wierzcholkow_boku * liczba_wierzcholkow_boku) / 10 - liczba_wierzcholkow_boku / 4 + 10 + liczba_wierzcholkow_boku].start_wartosci] = 0.5;
+		//spacer_benchowany.iteracjaA[spacer_benchowany.trwale.wierzcholki[((liczba_wierzcholkow_boku * liczba_wierzcholkow_boku) / 2) - (liczba_wierzcholkow_boku * liczba_wierzcholkow_boku) / 10 - liczba_wierzcholkow_boku / 4 + 10].start_wartosci] = 0.5;
+		//spacer_benchowany.iteracjaA[spacer_benchowany.trwale.wierzcholki[((liczba_wierzcholkow_boku * liczba_wierzcholkow_boku) / 2) - (liczba_wierzcholkow_boku * liczba_wierzcholkow_boku) / 10 - liczba_wierzcholkow_boku / 4 + 10 + liczba_wierzcholkow_boku].start_wartosci] = 0.5;
 
-		spacer_benchowany.iteracjaA[spacer_benchowany.trwale.wierzcholki[((liczba_wierzcholkow_boku * liczba_wierzcholkow_boku) / 2) + (liczba_wierzcholkow_boku * liczba_wierzcholkow_boku) / 10 - liczba_wierzcholkow_boku / 5 - liczba_wierzcholkow_boku / 4 + 10].start_wartosci] = 0.5;
-		spacer_benchowany.iteracjaA[spacer_benchowany.trwale.wierzcholki[((liczba_wierzcholkow_boku * liczba_wierzcholkow_boku) / 2) + (liczba_wierzcholkow_boku * liczba_wierzcholkow_boku) / 10 - liczba_wierzcholkow_boku / 5 - liczba_wierzcholkow_boku / 4 + 10 + liczba_wierzcholkow_boku].start_wartosci] = 0.5;
+		//spacer_benchowany.iteracjaA[spacer_benchowany.trwale.wierzcholki[((liczba_wierzcholkow_boku * liczba_wierzcholkow_boku) / 2) + (liczba_wierzcholkow_boku * liczba_wierzcholkow_boku) / 10 - liczba_wierzcholkow_boku / 5 - liczba_wierzcholkow_boku / 4 + 10].start_wartosci] = 0.5;
+		//spacer_benchowany.iteracjaA[spacer_benchowany.trwale.wierzcholki[((liczba_wierzcholkow_boku * liczba_wierzcholkow_boku) / 2) + (liczba_wierzcholkow_boku * liczba_wierzcholkow_boku) / 10 - liczba_wierzcholkow_boku / 5 - liczba_wierzcholkow_boku / 4 + 10 + liczba_wierzcholkow_boku].start_wartosci] = 0.5;
+		spacer_benchowany.iteracjaA[spacer_benchowany.trwale.wierzcholki[(liczba_wierzcholkow_boku * liczba_wierzcholkow_boku) / 2 - liczba_wierzcholkow_boku/2 - 6].start_wartosci] = jeden(zesp()) / std::sqrt(3.0);
+
+		spacer_benchowany.iteracjaA[spacer_benchowany.trwale.wierzcholki[(liczba_wierzcholkow_boku * liczba_wierzcholkow_boku) / 2 - liczba_wierzcholkow_boku].start_wartosci] = jeden(zesp()) / std::sqrt(3.0);
+		spacer_benchowany.iteracjaA[spacer_benchowany.trwale.wierzcholki[(liczba_wierzcholkow_boku * liczba_wierzcholkow_boku) / 2].start_wartosci] = jeden(zesp()) / std::sqrt(3.0);
 
 		spacer_benchowany.zapisz_iteracje();
 
@@ -963,13 +976,24 @@ struct test_absorbcji {
 		CZAS_INIT
 			printf("CPU start\n");
 		CZAS_START
-			for (uint64_t i = 0; i < liczba_iteracji; i++) {
+			uint64_t co_ile_zapisac_iterator = 0;
+			for (uint64_t i = 0; i < liczba_iteracji; i++, co_ile_zapisac_iterator++) {
 				spacer_cpu.iteracja_na_cpu();
-				spacer_cpu.absorbuj_na_cpu();
-				if(i % co_ile_zapisac == 0){
-					spacer_cpu.zapisz_iteracje();
+				if(i % co_ile_absorbuj == 0){
+					spacer_cpu.absorbuj_na_cpu(1.0);
+				} else {
+					spacer_cpu.absorbuj_na_cpu(0.0);
 				}
-				spacer_cpu.dokoncz_iteracje(1.0);
+				if (i % co_ile_normalizuj == 0) {
+					spacer_cpu.policz_wspolczynnik_normalizacji();
+				} else {
+					spacer_cpu.nie_normalizuj();
+				}
+				if(co_ile_zapisac_iterator >= co_ile_zapisac){// nie jest znaczaco szybsze
+					spacer_cpu.zapisz_iteracje();
+					co_ile_zapisac_iterator = 0;
+				}
+				spacer_cpu.dokoncz_iteracje(dt);
 			}
 		CZAS_STOP
 			printf("CPU koniec\n");
@@ -986,11 +1010,7 @@ struct test_absorbcji {
 		spacer_gpu.zbuduj_na_cuda();
 		printf("GPU start\n");
 		CZAS_START
-		//for(uint64_t i = 0; i < liczba_iteracji; i++){
-			iteracje_na_gpu<zesp, TMDQ>(spacer_gpu, liczba_iteracji, ile_pracy_na_jeden_watek, max_liczba_watkow_w_bloku, co_ile_zapisac);
-			//spacer_gpu.cuda_przynies();
-			//spacer_gpu.zapisz_iteracje();
-		//}
+		iteracje_na_gpu<zesp, TMCQ>(spacer_gpu, dt, liczba_iteracji, ile_pracy_na_jeden_watek, max_liczba_watkow_w_bloku, co_ile_zapisac, co_ile_normalizuj, co_ile_absorbuj);
 		CZAS_STOP
 			printf("GPU koniec\n");
 		czas_gpu_ys = diff;
@@ -1047,6 +1067,18 @@ struct test_absorbcji {
 		ImGui::Text("Czas gpu: %ld ms", czas_gpu_ys / 1000UL);
 		ImGui::Text("Czas cpu: %ld ms", czas_cpu_ys / 1000UL);
 
+		ImGui::Text("Spacer CPU: Prawdopodobienstwo poprzedniej:%lf, Zaabsorbowane poprzedniej: %lf, Norma poprzedniej: %lf",
+			spacer_cpu.iteracje_zapamietane[pokazywana_grafika_cpu]->prawdopodobienstwo_poprzedniej, 
+			spacer_cpu.iteracje_zapamietane[pokazywana_grafika_cpu]->zaabsorbowane_poprzedniej,
+			spacer_cpu.iteracje_zapamietane[pokazywana_grafika_cpu]->norma_poprzedniej_iteracji
+		);
+
+		ImGui::Text("Spacer GPU: Prawdopodobienstwo poprzedniej:%lf, Zaabsorbowane poprzedniej: %lf, Norma poprzedniej: %lf",
+			spacer_gpu.iteracje_zapamietane[pokazywana_grafika_gpu]->prawdopodobienstwo_poprzedniej,
+			spacer_gpu.iteracje_zapamietane[pokazywana_grafika_gpu]->zaabsorbowane_poprzedniej,
+			spacer_gpu.iteracje_zapamietane[pokazywana_grafika_gpu]->norma_poprzedniej_iteracji
+		);
+
 		if (okres_pokazu_slajdow < 0.95f) {
 			double czas = glfwGetTime();
 			if (czas > (ostatni_czas_odswiezenia + (double)okres_pokazu_slajdow)) {
@@ -1102,6 +1134,8 @@ struct test_absorbcji {
 		ImGui::SliderInt("Co ile zapisac", &co_ile_zapisac, 1, liczba_iteracji);
 		ImGui::SliderInt("Ile pracy na jeden watek", (int*)&ile_pracy_na_jeden_watek, 1, 200);
 		ImGui::SliderInt("Max liczba watkow w bloku", (int*)&max_liczba_watkow_w_bloku, 1, 900);
+		ImGui::SliderInt("Co ile normalizuj", &co_ile_normalizuj, 1, 1000);
+		ImGui::SliderInt("Co ile absorbuj", &co_ile_absorbuj, 1, 10000);
 		if (ImGui::Button("Przelicz cpu")) {
 			przelicz_cpu();
 		}

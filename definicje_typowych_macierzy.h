@@ -39,3 +39,8 @@ extern const transformata_macierz<zesp> HxH;
 extern const transformata_macierz<zesp> IxX;
 #define pauliIxpauliX IxX
 #define std_kierunki_krata IxX
+
+//					        Kolejnosc Filipa
+extern const transformata_macierz<zesp> FK;
+#define FilipKolejnsc FK
+extern const transformata_macierz<zesp> TJF;

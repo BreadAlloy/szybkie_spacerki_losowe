@@ -54,3 +54,11 @@ zesp dane_IxX[16] = { 0.0, 1.0, 0.0, 0.0,
 					  0.0, 0.0, 1.0, 0.0 };
 const transformata_macierz<zesp> IxX(4, dane_IxX);
 
+//					        Kolejnosc Filipa
+zesp dane_F_kolejnosc[16] = { 0.0, 0.0, 1.0, 0.0,
+							 0.0, 1.0, 0.0, 0.0,
+							 1.0, 0.0, 0.0, 0.0,
+							 0.0, 0.0, 0.0, 1.0 };
+const transformata_macierz<zesp> FK(4, dane_F_kolejnosc);
+
+const transformata_macierz<zesp> TJF(mnoz(std_kierunki_krata, FK));

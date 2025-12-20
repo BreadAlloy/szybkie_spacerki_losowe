@@ -39,7 +39,7 @@ _ACRTIMP void __cdecl _wassert(
 #define CZAS_START begin = std::chrono::steady_clock::now();
 
 #define CZAS_STOP end = std::chrono::steady_clock::now();\
-				  diff = std::chrono::duration_cast<std::chrono::microseconds> (end - begin).count();\
+				  diff = (long int)std::chrono::duration_cast<std::chrono::microseconds> (end - begin).count();\
 				  printf("Trwalo: %d ms\n", diff/1000);
 
 

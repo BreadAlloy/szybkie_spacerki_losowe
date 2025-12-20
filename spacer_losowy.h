@@ -18,6 +18,14 @@ static inline __HD__ double P(const zesp& a) {
 	return a.norm();
 }
 
+static inline __HD__ double NORMA(const double jest, const double powinno_byc, zesp) {
+	return sqrt(powinno_byc / jest);
+}
+
+static inline __HD__ double NORMA(const double jest, const double powinno_byc, double) {
+	return powinno_byc / jest;
+}
+
 constexpr typ_prawdopodobienstwa dokladnosc = 1.0e-10;
 constexpr typ_prawdopodobienstwa tolerancja = 1.0e-10;
 
@@ -85,6 +93,7 @@ struct dane_trwale{ //operatory, to gdzie wysy³aæ, przestrzen, raczej nie zmieni
 	statyczny_wektor<info_pracownika> znajdywacz_wierzcholka; // znajduje wierzcholek na podstawie indexu watka
 	statyczny_wektor<transformata> transformaty;
 	statyczny_wektor<uint64_t> indeksy_absorbowane;
+	double poczatkowe_prawdopodobienstwo = 1.0;
 
 	__host__ dane_trwale(const graf& przestrzen) {
 		ASSERT_Z_ERROR_MSG(przestrzen.czy_gotowy(), "graf nie byl gotowy\n");
@@ -241,28 +250,24 @@ struct dane_trwale{ //operatory, to gdzie wysy³aæ, przestrzen, raczej nie zmieni
 		ASSERT_Z_ERROR_MSG(wymieniana.arrnosc == wkladana.arrnosc, "Wkladana transformata ma inna arrnosc\n");
 		wymieniana = wkladana;
 	}
-
-	__host__ void odwroc() {
-		// dla dowolnego grafu to nie dzia³a, trzeba permutacje odwróciæ
-		for(uint32_t i = 0; i < transformaty.rozmiar; i++){
-			transformata odwracana = hermituj(transformaty[i]);
-			zamien_transformate(i, odwracana);
-		}
-	}
 };
 
 template<typename towar>
 struct dane_iteracji{
 	statyczny_wektor<towar> wartosci;
 	statyczny_wektor<double> wartosci_zaabsorbowane;
-	double czas = 0.0;
+ 	double czas = 0.0;
+	double prawdopodobienstwo_poprzedniej = 1.0;
+	double zaabsorbowane_poprzedniej = 0.0;
+	double norma_poprzedniej_iteracji = 1.0;
 
 	dane_iteracji(uint64_t liczba_wartosci = 0, uint64_t liczba_absorberow = 0)
 	: wartosci(liczba_wartosci), wartosci_zaabsorbowane(liczba_absorberow) {}
 
 	dane_iteracji(const dane_iteracji& kopiowane)
-	: wartosci(kopiowane.wartosci), czas(kopiowane.czas),
-	wartosci_zaabsorbowane(kopiowane.wartosci_zaabsorbowane){}
+	: wartosci(kopiowane.wartosci), czas(kopiowane.czas)
+	, norma_poprzedniej_iteracji(kopiowane.norma_poprzedniej_iteracji)
+	, wartosci_zaabsorbowane(kopiowane.wartosci_zaabsorbowane) {}
 
 	void zeruj(){
 		wartosci.memset(zero(towar()));
@@ -383,6 +388,7 @@ struct spacer_losowy{
 		iteracjaA = spacer::dane_iteracji<towar>(trwale.liczba_kubelkow(), trwale.liczba_absorberow());
 		iteracjaA.zeruj();
 		iteracjaA.czas = 0.0;
+		iteracjaA.norma_poprzedniej_iteracji = 1.0;
 
 		iteracjaB = spacer::dane_iteracji<towar>(trwale.liczba_kubelkow(), trwale.liczba_absorberow());
 	}
@@ -409,13 +415,42 @@ struct spacer_losowy{
 		for(uint64_t i = 0; i < trwale.wierzcholki.rozmiar; i++){
 			spacer::wierzcholek& wierzcholek = trwale.wierzcholki[i];
 			for (uint64_t j = 0; j < trwale.transformaty[wierzcholek.transformer].ile_watkow; j++) {
-				trwale.transformaty[wierzcholek.transformer].transformuj(trwale, wierzcholek, *iteracja_z, *iteracja_do, j);
+				trwale.transformaty[wierzcholek.transformer].transformuj(trwale, wierzcholek, *iteracja_z, *iteracja_do, j, i);
 			}
 		}
 	}
 
+	// rozproszona normalizacja niedzia³aj¹ca
+	#if 0 
+	__host__ void zaaplikuj_wspolczynniki_normalizacji(){
+		spacer::dane_iteracji<towar>* iteracja_z = &iteracjaA;
+		spacer::dane_iteracji<towar>* iteracja_do = &iteracjaB;
+		if (A == false) {
+			iteracja_z = &iteracjaB;
+			iteracja_do = &iteracjaA;
+		}
+	
+		for (uint64_t i = 0; i < trwale.wierzcholki.rozmiar; i++) {
+			spacer::wierzcholek& wierzcholek = trwale.wierzcholki[i];
+
+			double dP = iteracja_do->wspolczynniki_normalizacji[i];
+			double prawdopodobienstwo = 0.0;
+			for (uint64_t j = 0; j < wierzcholek.liczba_kierunkow; j++) {
+				prawdopodobienstwo += P(iteracja_do->operator[](wierzcholek.start_wartosci + j));
+			}
+
+			if(prawdopodobienstwo > 1.0e-5){ // watpliwy warunek TU PROBLEM
+				double normalizujacy = sqrt(1.0 - dP/prawdopodobienstwo);
+				for (uint64_t j = 0; j < wierzcholek.liczba_kierunkow; j++) {
+					iteracja_do->operator[](wierzcholek.start_wartosci + j) *= normalizujacy;
+				}
+			}
+		}
+	}
+	#endif
+
 	// najpierw iteracja
-	__host__ void absorbuj_na_cpu(){
+	__host__ void absorbuj_na_cpu(double procent_absorbowany = 1.0){
 		spacer::dane_iteracji<towar>* iteracja_z = &iteracjaA;
 		spacer::dane_iteracji<towar>* iteracja_do = &iteracjaB;
 		if (A == false) {
@@ -423,19 +458,86 @@ struct spacer_losowy{
 			iteracja_do = &iteracjaA;
 		}
 
+		if(procent_absorbowany == 0.0){
+			iteracja_do->wartosci_zaabsorbowane.przepisz_zawartosc(iteracja_z->wartosci_zaabsorbowane);
+			return;
+		}
+
+		double norma_zabranego = NORMA(1.0, procent_absorbowany, towar());
+		double norma_pozostawionego = NORMA(1.0, 1.0 - procent_absorbowany, towar());
+
 		for(uint64_t i = 0; i < trwale.liczba_absorberow(); i++){
 			uint64_t indeks_absorbowany = trwale.indeksy_absorbowane[i];
-			towar zaabsorbowane = iteracja_do->wartosci[indeks_absorbowany];
-			iteracja_do->wartosci[indeks_absorbowany] = zero(towar());
+			towar zaabsorbowane = iteracja_do->wartosci[indeks_absorbowany] * norma_zabranego;
+			iteracja_do->wartosci[indeks_absorbowany] *= norma_pozostawionego;
 			iteracja_do->wartosci_zaabsorbowane[i] = P(zaabsorbowane) + iteracja_z->wartosci_zaabsorbowane[i];
 		}
+	}
+
+	__host__ void policz_wspolczynnik_normalizacji(){
+		spacer::dane_iteracji<towar>* iteracja_z = &iteracjaA;
+		spacer::dane_iteracji<towar>* iteracja_do = &iteracjaB;
+		if (A == false) {
+			iteracja_z = &iteracjaB;
+			iteracja_do = &iteracjaA;
+		}
+
+		double prawdopodobienstwo_pozostale = 0.0; // jest
+		statyczny_wektor<towar>& wartosci = iteracja_z->wartosci;
+		for(uint64_t i = 0; i < wartosci.rozmiar; i++){
+			prawdopodobienstwo_pozostale += P(wartosci[i]);
+		}
+		iteracja_do->prawdopodobienstwo_poprzedniej = prawdopodobienstwo_pozostale;
+
+		double prawdopodobienstwo_zaabsorbowane = 0.0;
+		statyczny_wektor<double>& wartosci_zaabrosbowane = iteracja_z->wartosci_zaabsorbowane;
+		for (uint64_t i = 0; i < wartosci_zaabrosbowane.rozmiar; i++) {
+			prawdopodobienstwo_zaabsorbowane += wartosci_zaabrosbowane[i];
+		}
+		iteracja_do->zaabsorbowane_poprzedniej = prawdopodobienstwo_zaabsorbowane;
+
+		double powinno_byc = trwale.poczatkowe_prawdopodobienstwo - prawdopodobienstwo_zaabsorbowane;
+		iteracja_do->norma_poprzedniej_iteracji = NORMA(prawdopodobienstwo_pozostale, powinno_byc, towar());
+	}
+
+	__host__ void normalizuj_w_miejscu(){
+		spacer::dane_iteracji<towar>* iteracja_z = &iteracjaA;
+		spacer::dane_iteracji<towar>* iteracja_do = &iteracjaB;
+		if (A == false) {
+			iteracja_z = &iteracjaB;
+			iteracja_do = &iteracjaA;
+		}
+
+		double normalizujacy = iteracja_z->norma_poprzedniej_iteracji;
+		statyczny_wektor<towar>& wartosci = iteracja_z->wartosci;
+		for (uint64_t i = 0; i < wartosci.rozmiar; i++) {
+			wartosci[i] *= normalizujacy;
+		}
+		iteracja_z->norma_poprzedniej_iteracji = 1.0; // Aby TMCQ nie robi³a tego ponownie
+	}
+
+	__HD__ void nie_normalizuj(){
+		spacer::dane_iteracji<towar>* iteracja_z = &iteracjaA;
+		spacer::dane_iteracji<towar>* iteracja_do = &iteracjaB;
+		if (A == false) {
+			iteracja_z = &iteracjaB;
+			iteracja_do = &iteracjaA;
+		}
+
+		iteracja_do->prawdopodobienstwo_poprzedniej = iteracja_z->prawdopodobienstwo_poprzedniej;
+
+		iteracja_do->zaabsorbowane_poprzedniej = iteracja_z->zaabsorbowane_poprzedniej;
+
+		iteracja_do->norma_poprzedniej_iteracji = 1.0;
 	}
 
 	__HD__ void dokoncz_iteracje(double delta_t){
 		if(A){
 			iteracjaB.czas = iteracjaA.czas + delta_t;
+			//iteracjaA.norma_poprzedniej_iteracji = 1.0;
 		} else {
 			iteracjaA.czas = iteracjaB.czas + delta_t;
+			//iteracjaB.norma_poprzedniej_iteracji = 1.0;
 		}
 		A = !A;
 	}
@@ -484,9 +586,10 @@ struct spacer_losowy{
 		zapisana->wartosci_zaabsorbowane.cuda_przynies(stream);
 		zapisana->wartosci_zaabsorbowane.pamiec_device = nullptr;
 
+		// Przynosi czas i wspolczynnik normalizacji, prawdopodobienstwo, zaabsorbowane
 		checkCudaErrors(cudaMemcpyAsync(&(zapisana->czas),
 			A ? &lokalizacja_na_device->iteracjaA.czas : &lokalizacja_na_device->iteracjaB.czas,
-			sizeof(double), cudaMemcpyDeviceToHost, stream));
+			4 * sizeof(double), cudaMemcpyDeviceToHost, stream));
 
 		ASSERT_Z_ERROR_MSG((iteracje_zapamietane.rozmiar + 1) <= iteracje_zapamietane.rozmiar_zmallocowany, "Brakuje miejsca na kolejna iteracje\n");
 		iteracje_zapamietane.pushback(zapisana);
@@ -518,17 +621,6 @@ struct spacer_losowy{
 		stream = 0;
 	}
 
-	void odwroc(){
-		// dla dowolnego grafu to nie dzia³a, trzeba permutacje odwróciæ
-		trwale.odwroc();
-	}
-
-	//__HD__ virtual void mala_praca(statyczny_wektor<towar>& docelowy, uint64_t index_watka){
-	//	uint64_t index_wierzcholka = znajdz_wierzcholek(index_watka);
-	//	uint64_t index_watka_w_wierzcholku = znajdywacz_wierzcholka[index_wierzcholka] - index_watka;
-	//	spacer::wierzcholek& w = wierzcholki[index_wierzcholka];
-	//	// tu jeszcze brakuje
-	//}
 };
 
 __HD__ double dot(const estetyczny_wektor<double>&, const estetyczny_wektor<double>&);
@@ -575,6 +667,6 @@ __host__ void iteruj_na_gpu(spacer_losowy<towar, transformata>& spacer,
 	uint64_t liczba_iteracji = 1, uint64_t liczba_watkow = max_ilosc_watkow_w_bloku);
 
 template <typename towar, typename transformata>
-__host__ void iteracje_na_gpu(spacer_losowy<towar, transformata>& spacer,
-	uint64_t liczba_iteracji, uint64_t ile_prac_na_watek, uint32_t ile_watkow_na_blok_max, uint32_t co_ile_zapisac);
+__host__ void iteracje_na_gpu(spacer_losowy<towar, transformata>& spacer, double delta_t,
+	uint64_t liczba_iteracji, uint64_t ile_prac_na_watek, uint32_t ile_watkow_na_blok_max, uint32_t co_ile_zapisac, uint32_t co_ile_normalizuj = 0xFFFFFFFF, uint32_t co_ile_absorbuj = 1);
 

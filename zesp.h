@@ -99,6 +99,14 @@ struct zesp {
         a = a / b;
     }
 
+    __HD__ static friend void operator*=(zesp& a, const zesp& b) {
+        a = a * b;
+    }
+
+    __HD__ static friend void operator*=(zesp& a, const double& b) {
+        a = a * b;
+    }
+
     __HD__ static friend bool operator==(const zesp& a, const zesp& b) {
         return (a.Re == b.Re) && (a.Im == b.Im);
     }

@@ -79,6 +79,11 @@ struct statyczny_wektor{ // wektor automatycznie mallocujacy i zwalnijacy, nie m
 		return *this;
 	}
 
+	__HD__ void przepisz_zawartosc(const statyczny_wektor& przepisywany){
+		ASSERT_Z_ERROR_MSG(rozmiar == przepisywany.rozmiar, "Do przepisywania musza miec ten sam rozmiar\n");
+		this->operator=(przepisywany);
+	}
+
 	__HD__ typ_wskaznika& operator[](uint64_t index) {
 		lepszy_assert(index < rozmiar);
 		return PAMIEC[index];
