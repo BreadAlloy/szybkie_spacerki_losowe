@@ -629,30 +629,30 @@ __HD__ zesp dot(const estetyczny_wektor<zesp>&, const estetyczny_wektor<zesp>&);
 
 //							---===SPACER LINIA===---
 template<typename transformata>
-__host__ spacer::uklad_transformat<transformata> uklad_transformat_dla_lini(uint32_t liczba_wierzcholkow, transformata& srodek, transformata& koniec);
+__host__ spacer::uklad_transformat<transformata> uklad_transformat_dla_lini(uint32_t liczba_wierzcholkow, transformata& T, transformata& boki);
 
 template<typename towar, typename transformata>
 __host__ spacer_losowy<towar, transformata> spacer_linia(
-uint32_t liczba_wierzcholkow, transformata& srodek, transformata& konce, 
-graf* linia = nullptr);
+uint32_t liczba_wierzcholkow, transformata T, transformata boki, graf* linia = nullptr);
 
 
 //							---===SPACER KRATA 2D===---
 template<typename towar, typename transformata>
 __host__ spacer_losowy<towar, transformata> spacer_krata_2D(
-uint32_t liczba_wierzcholkow_boku, transformata srodek, transformata bok, transformata naroznik, 
-graf* krata = nullptr);
+uint32_t liczba_wierzcholkow_boku, transformata T, transformata boki, graf* krata = nullptr);
 
 template<typename transformata>
-__host__ spacer::uklad_transformat<transformata> uklad_transformat_dla_kraty_2D(uint32_t liczba_wierzcholkow_boku, transformata& srodek, transformata& bok, transformata& naroznik);
-
-
+__host__ spacer::uklad_transformat<transformata> uklad_transformat_dla_kraty_2D(uint32_t liczba_wierzcholkow_boku, transformata& T, transformata& boki);
 
 template<typename towar, typename transformata>
-__host__ void test_funkcji_tworzacych_spacery(transformata srodek, transformata konce);
+__host__ spacer_losowy<towar, transformata> spacer_krata_2D_cykl(
+	uint32_t liczba_wierzcholkow_boku, transformata T, graf* krata);
 
 template<typename towar, typename transformata>
-__host__ void test_funkcji_tworzacych_spacery_2(transformata srodek, transformata bok, transformata narozniki);
+__host__ void test_funkcji_tworzacych_spacery(transformata T, transformata boki);
+
+template<typename towar, typename transformata>
+__host__ void test_funkcji_tworzacych_spacery_2(transformata T, transformata boki);
 
 //template __host__ spacer::uklad_transformat<transformata_macierz<double>> uklad_transformat_dla_lini<transformata_macierz<double>>(uint32_t liczba_wierzcholkow, transformata_macierz<double>& srodek, transformata_macierz<double>& koniec);
 

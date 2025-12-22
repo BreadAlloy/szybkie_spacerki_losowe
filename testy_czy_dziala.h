@@ -49,7 +49,7 @@ struct test_spaceru_klasyczny_dyskretny{
 	__host__ test_spaceru_klasyczny_dyskretny()
 		: nazwa_okna("Test spaceru klasyczny dyskretny")
 		, przestrzen(graf_krata_2D(liczba_wierzcholkow_boku))
-		, spacer(spacer_krata_2D<double, TMDK>(liczba_wierzcholkow_boku, transformata_macierz<double>(4, macierz4x4), transformata_macierz<double>(3, macierz3x3), transformata_macierz<double>(1.0, 0.0, 0.0, 1.0), &przestrzen)){
+		, spacer(spacer_krata_2D<double, TMDK>(liczba_wierzcholkow_boku, transformata_macierz<double>(4, macierz4x4), transformata_macierz<double>(4, macierz4x4), &przestrzen)){
 		
 		spacer.iteracjaA[spacer.trwale.wierzcholki[(liczba_wierzcholkow_boku * liczba_wierzcholkow_boku) / 2].start_wartosci] = 0.5;
 		spacer.iteracjaA[spacer.trwale.wierzcholki[((liczba_wierzcholkow_boku * liczba_wierzcholkow_boku) / 2) + 1].start_wartosci + 2] = 0.5;
@@ -178,8 +178,7 @@ struct test_spaceru_kwantowy_dyskretny {
 	__host__ test_spaceru_kwantowy_dyskretny()
 		: nazwa_okna("Test spaceru kwantowego dyskretny")
 		, przestrzen(graf_krata_2D(liczba_wierzcholkow_boku))
-		, spacer(spacer_krata_2D<zesp, TMDQ>(liczba_wierzcholkow_boku,
-		mnoz(HxH, std_kierunki_krata), I_3, I_2, &przestrzen)) {
+		, spacer(spacer_krata_2D<zesp, TMDQ>(liczba_wierzcholkow_boku, mnoz(HxH, std_kierunki_krata), I_4, &przestrzen)) {
 
 		spacer.iteracjaA[spacer.trwale.wierzcholki[(liczba_wierzcholkow_boku * liczba_wierzcholkow_boku) / 2].start_wartosci] = jeden(zesp()) / std::sqrt(2.0);
 		spacer.iteracjaA[spacer.trwale.wierzcholki[((liczba_wierzcholkow_boku * liczba_wierzcholkow_boku) / 2) + 1].start_wartosci + 2] = jeden(zesp()) / std::sqrt(2.0);
@@ -307,8 +306,7 @@ struct test_spaceru_kwantowy_dyskretny_gpu {
 	__host__ test_spaceru_kwantowy_dyskretny_gpu()
 		: nazwa_okna("Test spaceru kwantowego dyskretny GPU")
 		, przestrzen(graf_krata_2D(liczba_wierzcholkow_boku))
-		, spacer(spacer_krata_2D<zesp, TMDQ>(liczba_wierzcholkow_boku, HxH,
-		 I_3, I_2, &przestrzen)) {
+		, spacer(spacer_krata_2D<zesp, TMDQ>(liczba_wierzcholkow_boku, HxH, I_4, &przestrzen)) {
 
 		spacer.iteracjaA[spacer.trwale.wierzcholki[(liczba_wierzcholkow_boku * liczba_wierzcholkow_boku) / 2].start_wartosci] = jeden(zesp()) / std::sqrt(2.0);
 		spacer.iteracjaA[spacer.trwale.wierzcholki[((liczba_wierzcholkow_boku * liczba_wierzcholkow_boku) / 2) + 1].start_wartosci + 2] = jeden(zesp()) / std::sqrt(2.0);
@@ -445,7 +443,7 @@ struct test_spaceru_kwantowy_ciagly {
 	__host__ test_spaceru_kwantowy_ciagly()
 		: nazwa_okna("Test spaceru kwantowego ciagly")
 		, przestrzen(graf_krata_2D(liczba_wierzcholkow_boku))
-		, spacer(spacer_krata_2D<zesp, TMCQ>(liczba_wierzcholkow_boku, HxH, I_3, I_2, &przestrzen)) {
+		, spacer(spacer_krata_2D<zesp, TMCQ>(liczba_wierzcholkow_boku, HxH, I_4, &przestrzen)) {
 
 		spacer.iteracjaA[spacer.trwale.wierzcholki[(liczba_wierzcholkow_boku * liczba_wierzcholkow_boku) / 2].start_wartosci] = jeden(zesp());// std::sqrt(2.0);
 		//spacer.iteracjaA[spacer.trwale.wierzcholki[((liczba_wierzcholkow_boku * liczba_wierzcholkow_boku) / 2) + 1].start_wartosci + 2] = jeden(zesp()) / std::sqrt(2.0);
@@ -583,7 +581,7 @@ struct test_czasow_wykonania_kwantowy {
 		: nazwa_okna("Test czasow wykonania kwantowy")
 		, przestrzen(graf_krata_2D(liczba_wierzcholkow_boku))
 		, spacer_benchowany(spacer_krata_2D<zesp, TMDQ>(liczba_wierzcholkow_boku,
-		 tensor(X, H), I_3, I_2, &przestrzen))
+		 tensor(X, H), I_4, &przestrzen))
 		, spacer_cpu(spacer_benchowany)
 		, spacer_gpu(spacer_benchowany){
 
@@ -896,10 +894,10 @@ struct test_absorbcji {
 
 	float skala_obrazu = 1.0f;
 
-	const uint32_t liczba_wierzcholkow_boku = 101;
+	const uint32_t liczba_wierzcholkow_boku = 301;
 	uint32_t liczba_iteracji = 50;
 	uint32_t ile_pracy_na_jeden_watek = 30;
-	uint32_t max_liczba_watkow_w_bloku = 500;
+	uint32_t max_liczba_watkow_w_bloku = 300;
 
 	graf przestrzen;
 	spacer_losowy<zesp, TMCQ> spacer_benchowany;
@@ -907,10 +905,12 @@ struct test_absorbcji {
 	spacer_losowy<zesp, TMCQ> spacer_cpu;
 	uint64_t czas_cpu_ys = 0;
 	std::vector<grafika*> grafiki_iteracji_cpu;
+	std::vector<std::vector<grafika*>> grafiki_iteracji_cpu_kierunki;
 
 	spacer_losowy<zesp, TMCQ> spacer_gpu;
 	uint64_t czas_gpu_ys = 0;
 	std::vector<grafika*> grafiki_iteracji_gpu;
+	std::vector<std::vector<grafika*>> grafiki_iteracji_gpu_kierunki;
 
 	std::vector<double> prawdopodop_cpu;
 	std::vector<double> prawdopodop_gpu;
@@ -924,9 +924,9 @@ struct test_absorbcji {
 
 	__host__ test_absorbcji()
 		: nazwa_okna("Test absorbcji")
-		, przestrzen(graf_krata_2D(liczba_wierzcholkow_boku))
-		, spacer_benchowany(spacer_eksperymentu_dwuszczelinowego<zesp, TMCQ>(
-			liczba_wierzcholkow_boku, tensor(X, H), I_3, I_2, &przestrzen))
+		, przestrzen(graf_krata_2D_cykl(liczba_wierzcholkow_boku))
+		, spacer_benchowany(spacer_krata_2D_cykl<zesp, TMCQ>(
+			liczba_wierzcholkow_boku, tensor(X, H), &przestrzen))
 		, spacer_cpu(spacer_benchowany)
 		, spacer_gpu(spacer_benchowany) {
 
@@ -939,10 +939,13 @@ struct test_absorbcji {
 
 		//spacer_benchowany.iteracjaA[spacer_benchowany.trwale.wierzcholki[((liczba_wierzcholkow_boku * liczba_wierzcholkow_boku) / 2) + (liczba_wierzcholkow_boku * liczba_wierzcholkow_boku) / 10 - liczba_wierzcholkow_boku / 5 - liczba_wierzcholkow_boku / 4 + 10].start_wartosci] = 0.5;
 		//spacer_benchowany.iteracjaA[spacer_benchowany.trwale.wierzcholki[((liczba_wierzcholkow_boku * liczba_wierzcholkow_boku) / 2) + (liczba_wierzcholkow_boku * liczba_wierzcholkow_boku) / 10 - liczba_wierzcholkow_boku / 5 - liczba_wierzcholkow_boku / 4 + 10 + liczba_wierzcholkow_boku].start_wartosci] = 0.5;
-		spacer_benchowany.iteracjaA[spacer_benchowany.trwale.wierzcholki[(liczba_wierzcholkow_boku * liczba_wierzcholkow_boku) / 2 - liczba_wierzcholkow_boku/2 - 6].start_wartosci] = jeden(zesp()) / std::sqrt(3.0);
+		//spacer_benchowany.iteracjaA[spacer_benchowany.trwale.wierzcholki[(liczba_wierzcholkow_boku * liczba_wierzcholkow_boku) / 2 - liczba_wierzcholkow_boku/2 - 6].start_wartosci] = jeden(zesp()) / std::sqrt(3.0);
 
-		spacer_benchowany.iteracjaA[spacer_benchowany.trwale.wierzcholki[(liczba_wierzcholkow_boku * liczba_wierzcholkow_boku) / 2 - liczba_wierzcholkow_boku].start_wartosci] = jeden(zesp()) / std::sqrt(3.0);
-		spacer_benchowany.iteracjaA[spacer_benchowany.trwale.wierzcholki[(liczba_wierzcholkow_boku * liczba_wierzcholkow_boku) / 2].start_wartosci] = jeden(zesp()) / std::sqrt(3.0);
+		spacer_benchowany.iteracjaA[spacer_benchowany.trwale.wierzcholki[(liczba_wierzcholkow_boku * liczba_wierzcholkow_boku) / 2 - liczba_wierzcholkow_boku].start_wartosci] = jeden(zesp()) / 2.0;
+		spacer_benchowany.iteracjaA[spacer_benchowany.trwale.wierzcholki[(liczba_wierzcholkow_boku * liczba_wierzcholkow_boku) / 2].start_wartosci] = jeden(zesp()) / 2.0;
+
+		spacer_benchowany.iteracjaA[spacer_benchowany.trwale.wierzcholki[(liczba_wierzcholkow_boku * liczba_wierzcholkow_boku) / 2 - liczba_wierzcholkow_boku].start_wartosci + 2] = jeden(zesp()) / 2.0;
+		spacer_benchowany.iteracjaA[spacer_benchowany.trwale.wierzcholki[(liczba_wierzcholkow_boku * liczba_wierzcholkow_boku) / 2].start_wartosci + 2] = jeden(zesp()) / 2.0;
 
 		spacer_benchowany.zapisz_iteracje();
 
@@ -1025,14 +1028,16 @@ struct test_absorbcji {
 		}
 
 		grafiki_iteracji_cpu.resize(spacer_cpu.iteracje_zapamietane.rozmiar);
+		grafiki_iteracji_cpu_kierunki.resize(spacer_cpu.iteracje_zapamietane.rozmiar);
 		czasy_cpu.resize(spacer_cpu.iteracje_zapamietane.rozmiar);
 		prawdopodop_cpu.resize(spacer_cpu.iteracje_zapamietane.rozmiar);
 
 		for (uint64_t i = 0; i < spacer_cpu.iteracje_zapamietane.rozmiar; i++) {
 			spacer::dane_iteracji<zesp>& iteracja = *(spacer_cpu.iteracje_zapamietane[i]);
 			czasy_cpu[i] = iteracja.czas;
-			grafiki_iteracji_cpu[i] = grafika_P_dla_kraty_2D(spacer_cpu,
+			grafiki_iteracji_cpu[i] = grafika_P_kierunkow_dla_kraty_2D(spacer_cpu,
 				iteracja, width, height, &(prawdopodop_cpu[i]));
+			grafiki_iteracji_cpu_kierunki[i] = grafiki_P_kierunkow_dla_kraty_2D(spacer_cpu, iteracja, width, height);
 		}
 	}
 
@@ -1042,14 +1047,16 @@ struct test_absorbcji {
 		}
 
 		grafiki_iteracji_gpu.resize(spacer_gpu.iteracje_zapamietane.rozmiar);
+		grafiki_iteracji_gpu_kierunki.resize(spacer_gpu.iteracje_zapamietane.rozmiar);
 		czasy_gpu.resize(spacer_gpu.iteracje_zapamietane.rozmiar);
 		prawdopodop_gpu.resize(spacer_gpu.iteracje_zapamietane.rozmiar);
 
 		for (uint64_t i = 0; i < spacer_gpu.iteracje_zapamietane.rozmiar; i++) {
 			spacer::dane_iteracji<zesp>& iteracja = *(spacer_gpu.iteracje_zapamietane[i]);
 			czasy_gpu[i] = iteracja.czas;
-			grafiki_iteracji_gpu[i] = grafika_P_dla_kraty_2D(spacer_gpu,
+			grafiki_iteracji_gpu[i] = grafika_P_kierunkow_dla_kraty_2D(spacer_gpu,
 				iteracja, width, height, &(prawdopodop_gpu[i]));
+			grafiki_iteracji_gpu_kierunki[i] = grafiki_P_kierunkow_dla_kraty_2D(spacer_gpu, iteracja, width, height);
 		}
 	}
 
@@ -1060,9 +1067,9 @@ struct test_absorbcji {
 		ImGui::Text("GPU: t = %lf", spacer_gpu.iteracje_zapamietane[pokazywana_grafika_gpu]->czas);
 		ImGui::SliderFloat("Okres pokazu slajdow(1.0 to brak pokazu)", &okres_pokazu_slajdow, 0.01f, 1.0f);
 
-		plot_grafike_dla_kraty_2D(spacer_cpu, pokazywana_grafika_cpu, przestrzen, G_cpu, width, height, skala_obrazu, "spacer cpu");
+		plot_spacer_dla_kraty_2D(spacer_cpu, pokazywana_grafika_cpu, grafiki_iteracji_cpu_kierunki[pokazywana_grafika_cpu], przestrzen, G_cpu, width, height, skala_obrazu, "spacer cpu");
 		ImGui::SameLine();
-		plot_grafike_dla_kraty_2D(spacer_gpu, pokazywana_grafika_gpu, przestrzen, G_gpu, width, height, skala_obrazu, "spacer gpu");
+		plot_spacer_dla_kraty_2D(spacer_gpu, pokazywana_grafika_gpu, grafiki_iteracji_gpu_kierunki[pokazywana_grafika_gpu], przestrzen, G_gpu, width, height, skala_obrazu, "spacer gpu");
 
 		ImGui::Text("Czas gpu: %ld ms", czas_gpu_ys / 1000UL);
 		ImGui::Text("Czas cpu: %ld ms", czas_cpu_ys / 1000UL);
@@ -1110,7 +1117,8 @@ struct test_absorbcji {
 			ImPlot::EndPlot();
 		}
 		ImGui::SameLine();
-		if (ImPlot::BeginPlot("##Dane w spacerze 2", ImVec2(skala_obrazu * 200.0f, skala_obrazu * 200.0f))) {
+		if (spacer_cpu.iteracje_zapamietane[pokazywana_grafika_cpu]->wartosci_zaabsorbowane.rozmiar == liczba_wierzcholkow_boku &&
+			ImPlot::BeginPlot("##Dane w spacerze 2", ImVec2(skala_obrazu * 200.0f, skala_obrazu * 200.0f))) {
 			//ImPlot::PlotLineLepsze("Zaabsorbowane cpu", pozycje.data(), &(spacer_cpu.trwale.absorbery[0].suma_zaabsorbowanego), (int)liczba_wierzcholkow_boku, 0, 0, sizeof(spacer::absorber));
 			//ImPlot::PlotLineLepsze("Zaabsorbowane gpu", pozycje.data(), &(spacer_gpu.trwale.absorbery[0].suma_zaabsorbowanego), (int)liczba_wierzcholkow_boku, 0, 0, sizeof(spacer::absorber));
 

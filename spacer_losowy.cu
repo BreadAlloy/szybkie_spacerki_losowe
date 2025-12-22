@@ -260,7 +260,7 @@ __host__ void iteracje_na_gpu(spacer_losowy<towar, transformata>& spacer, double
 		
 		iteracja_na_gpu<towar, transformata><<<(uint32_t)ile_blokow, (uint32_t)ile_watkow, 0, spacer.stream>>>(spacer.lokalizacja_na_device, ile_watkow, ile_blokow, ile_prac_na_watek);
 		if(i % co_ile_normalizuj == 0) {
-			przygotuj_do_normalizacji<towar, transformata>(spacer, 100);
+			przygotuj_do_normalizacji<towar, transformata>(spacer, spacer.trwale.gdzie_wyslac.rozmiar / 700UL);
 		} else {
 			nie_normalizuj<towar, transformata><<<1, 1, 0, spacer.stream>>>(spacer.lokalizacja_na_device);
 		}
@@ -268,7 +268,8 @@ __host__ void iteracje_na_gpu(spacer_losowy<towar, transformata>& spacer, double
 			spacer.zapisz_iteracje_z_cuda();
 		}
 		checkCudaErrors(cudaStreamSynchronize(spacer.stream));
-		
+		checkCudaErrors(cudaGetLastError());
+
 		if(i % co_ile_absorbuj == 0){
 			absorbuj_na_gpu<towar, transformata><<<(uint32_t)ile_blokow_absorbcja, (uint32_t)ile_watkow_absorbcja, 0, spacer.stream>>> (
 			spacer.lokalizacja_na_device, 1.0, ile_watkow_absorbcja, ile_blokow_absorbcja, ile_prac_na_watek);
@@ -280,11 +281,11 @@ __host__ void iteracje_na_gpu(spacer_losowy<towar, transformata>& spacer, double
 			policz_wspolczynnik_normalizacji<towar, transformata><<<1, 1, 0, spacer.stream>>>(spacer.lokalizacja_na_device);
 		}
 		checkCudaErrors(cudaStreamSynchronize(spacer.stream));
+		checkCudaErrors(cudaGetLastError());
 		
 		zakoncz_iteracje<towar, transformata><<<1, 1, 0, spacer.stream>>>(spacer.lokalizacja_na_device, delta_t);
 		spacer.dokoncz_iteracje(delta_t);
 		checkCudaErrors(cudaStreamSynchronize(spacer.stream));
-
 		checkCudaErrors(cudaGetLastError());
 	}
 }

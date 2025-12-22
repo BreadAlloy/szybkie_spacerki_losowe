@@ -2,7 +2,7 @@
 
 template<typename towar, typename transformata>
 __host__ spacer_losowy<towar, transformata> spacer_eksperymentu_dwuszczelinowego(
-uint32_t liczba_wierzcholkow_boku, transformata srodek, transformata bok, transformata naroznik, 
+uint32_t liczba_wierzcholkow_boku, transformata T, transformata boki, 
 graf* krata) {
 	bool zkasuj = false;
 	if (krata == nullptr) {
@@ -12,7 +12,7 @@ graf* krata) {
 	}
 
 	spacer_losowy<towar, transformata> spacer(*krata);
-	spacer::uklad_transformat<transformata> transformaty = uklad_transformat_dla_kraty_2D<transformata>(liczba_wierzcholkow_boku, srodek, bok, naroznik);
+	spacer::uklad_transformat<transformata> transformaty = uklad_transformat_dla_kraty_2D<transformata>(liczba_wierzcholkow_boku, T, boki);
 	spacer.trwale.dodaj_transformaty(transformaty);
 	spacer.trwale.przygotuj_znajdywacz_wierzcholka();
 	spacer::indeksy_pozycji pozycje_absorberow;
@@ -36,9 +36,7 @@ graf* krata) {
 }
 
 template __host__ spacer_losowy<zesp, TMDQ> spacer_eksperymentu_dwuszczelinowego(
-	uint32_t liczba_wierzcholkow_boku, TMDQ srodek, TMDQ bok, TMDQ naroznik,
-	graf* krata);
+	uint32_t liczba_wierzcholkow_boku, TMDQ T, TMDQ boki, graf* krata);
 
 template __host__ spacer_losowy<zesp, TMCQ> spacer_eksperymentu_dwuszczelinowego(
-	uint32_t liczba_wierzcholkow_boku, TMCQ srodek, TMCQ bok, TMCQ naroznik,
-	graf* krata);
+	uint32_t liczba_wierzcholkow_boku, TMCQ T, TMCQ boki, graf* krata);

@@ -271,5 +271,6 @@ graf graf_lini_cykl(uint32_t liczba_wierzcholkow, bool z_nazwami = Z_NAZWAMI);
 graf graf_krata_2D(uint32_t liczba_wierzcholkow_boku, bool z_nazwami = Z_NAZWAMI);
 graf graf_krata_2D_z_przekatnymi(uint32_t liczba_wierzcholkow_boku, bool z_nazwami = Z_NAZWAMI);
 graf graf_krata_3D(uint32_t liczba_wierzcholkow_boku, bool z_nazwami = Z_NAZWAMI);
+graf graf_krata_2D_cykl(uint32_t liczba_wierzcholkow_boku, bool z_nazwami = Z_NAZWAMI);
 void test_funkcji_tworzacych_grafy();
 

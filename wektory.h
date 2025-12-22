@@ -29,23 +29,27 @@ struct statyczny_wektor{ // wektor automatycznie mallocujacy i zwalnijacy, nie m
 	}
 
 	__host__ void cuda_malloc(){
+		if (rozmiar == 0) return;
 		ASSERT_Z_ERROR_MSG(pamiec_device == nullptr, "Coœ jest ju¿ na device\n");
 		checkCudaErrors(cudaMalloc((void**)&pamiec_device, bajt_rozmiar()));
 	}
 
 	__host__ void cuda_zanies(cudaStream_t stream){
-		ASSERT_Z_ERROR_MSG(pamiec_device != nullptr, "Nie ma pamieci na gpu\n");
+		if(rozmiar == 0) return;
+ 		ASSERT_Z_ERROR_MSG(pamiec_device != nullptr, "Nie ma pamieci na gpu\n");
 		ASSERT_Z_ERROR_MSG(pamiec_host != nullptr, "Nie ma pamieci na hoscie\n");
 		checkCudaErrors(cudaMemcpyAsync((void*)pamiec_device, (void*)pamiec_host, bajt_rozmiar(), cudaMemcpyHostToDevice, stream));
 	}
 
 	__host__ void cuda_przynies(cudaStream_t stream){
+		if (rozmiar == 0) return;
 		ASSERT_Z_ERROR_MSG(pamiec_device != nullptr, "Nie ma pamieci na gpu\n");
 		ASSERT_Z_ERROR_MSG(pamiec_host != nullptr, "Nie ma pamieci na hoscie\n");
 		checkCudaErrors(cudaMemcpyAsync((void*)pamiec_host, (void*)pamiec_device, bajt_rozmiar(), cudaMemcpyDeviceToHost, stream));
 	}
 
 	__host__ void cuda_free() {
+		if (rozmiar == 0) return;
 		ASSERT_Z_ERROR_MSG(pamiec_device != nullptr, "Nic nie ma w pamieci");
 		checkCudaErrors(cudaFree((void*)pamiec_device));
 		pamiec_device = nullptr;

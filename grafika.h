@@ -34,6 +34,13 @@ struct grafika {
         data = (unsigned char*)malloc(Width * Height * sizeof(unsigned char) * 4);
     }
 
+    grafika(uint32_t Width, uint32_t Height, unsigned char* Data) {
+        width = Width;
+        height = Height;
+        data = Data;
+        LoadTextureFromMemory(false);
+    }
+
     grafika(const char* path) {
         LoadTextureFromFile(path);
     }
@@ -87,7 +94,7 @@ struct grafika {
         stbi_write_bmp(nazwa_pliku.c_str(), width, height, 1, (void*)data);
     }
 
-    bool LoadTextureFromMemory()
+    bool LoadTextureFromMemory(bool zwolnij = true)
     {
         int image_width = width;
         int image_height = height;
@@ -113,9 +120,10 @@ struct grafika {
 
         ASSERT_Z_ERROR_MSG(glIsTexture(texture), "Cos nie tak z tekstura\n");
 
-        free(data);
+        if(zwolnij){
+            free(data);
+        }
         data = nullptr;
-
         return true;
     }
 
@@ -133,4 +141,13 @@ __host__ grafika* grafika_P_dla_kraty_2D(spacer_losowy<towar, transformata>& spa
 
 template <typename towar, typename transformata>
 __host__ void plot_grafike_dla_kraty_2D(spacer_losowy<towar, transformata>& spacer, uint64_t pokazywana_grafika, graf& przestrzen, grafika* G, uint32_t width, uint32_t height, float skala_obrazu, std::string nazwa_wykresu = "##");
+
+template <typename towar, typename transformata>
+__host__ std::vector<grafika*> grafiki_P_kierunkow_dla_kraty_2D(spacer_losowy<towar, transformata>& spacer, spacer::dane_iteracji<towar>& iteracja, uint32_t width, uint32_t height);
+
+template <typename towar, typename transformata>
+__host__ void plot_spacer_dla_kraty_2D(spacer_losowy<towar, transformata>& spacer, uint64_t pokazywana_grafika, std::vector<grafika*> kierunki, graf& przestrzen, grafika* G, uint32_t width, uint32_t height, float skala_obrazu, std::string nazwa_wykresu);
+
+template <typename towar, typename transformata>
+__host__ grafika* grafika_P_kierunkow_dla_kraty_2D(spacer_losowy<towar, transformata>& spacer, spacer::dane_iteracji<towar>& iteracja, uint32_t width, uint32_t height, double* suma_ptr = nullptr);
 

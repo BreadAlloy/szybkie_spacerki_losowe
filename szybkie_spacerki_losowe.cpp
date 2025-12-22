@@ -50,6 +50,8 @@ int main(int argc, char** argv)
     //test_sciezki_spaceru_kwantowy_dyskretny TSSKD;
     test_absorbcji TA;
 
+    //test_funkcji_tworzacych_grafy();
+
     while (!glfwWindowShouldClose(window))
     {
         // Poll and handle events (inputs, window resize, etc.)
