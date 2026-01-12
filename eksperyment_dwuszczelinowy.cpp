@@ -7,7 +7,7 @@ graf* krata) {
 	bool zkasuj = false;
 	if (krata == nullptr) {
 		//czy to nie jest niewydajne?
-		krata = new graf(graf_krata_2D(liczba_wierzcholkow_boku, BEZ_NAZW));
+		krata = new graf(graf_krata_2D_cykl(liczba_wierzcholkow_boku, BEZ_NAZW));
 		zkasuj = true;
 	}
 
@@ -17,7 +17,7 @@ graf* krata) {
 	spacer.trwale.przygotuj_znajdywacz_wierzcholka();
 	spacer::indeksy_pozycji pozycje_absorberow;
 	for(uint64_t i = 0; i < liczba_wierzcholkow_boku; i++){
-		pozycje_absorberow.push_back(spacer::indeks_pozycji(liczba_wierzcholkow_boku * i + (liczba_wierzcholkow_boku - 1) - 5, 0));
+		pozycje_absorberow.push_back(spacer::indeks_pozycji(liczba_wierzcholkow_boku * i + (liczba_wierzcholkow_boku - 1) - 6, 0));
 	}
 	//for (uint64_t i = 0; i < liczba_wierzcholkow_boku; i++) {
 	//	pozycje_absorberow.push_back(spacer::indeks_pozycji(liczba_wierzcholkow_boku * i + 5, 0));

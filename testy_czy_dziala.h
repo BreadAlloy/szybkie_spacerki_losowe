@@ -14,6 +14,8 @@
 
 #include "eksperyment_dwuszczelinowy.h"
 
+#include "alg_liniowa.h"
+
 namespace ImPlot{
 template <typename T>
 void PlotLineLepsze(const char* label_id, const double* xs, const T* ys, int count, ImPlotLineFlags flags, int offset, int stride);
@@ -888,13 +890,14 @@ struct test_absorbcji {
 	int pokazywana_grafika_cpu = 0;
 	int pokazywana_grafika_gpu = 0;
 
-	int co_ile_zapisac = 1;	
+	int co_ile_zapisac = 100;	
 	int co_ile_normalizuj = 1;
 	int co_ile_absorbuj = 1;
 
 	float skala_obrazu = 1.0f;
+	float wzmocnienie = 1.0f;
 
-	const uint32_t liczba_wierzcholkow_boku = 301;
+	const uint32_t liczba_wierzcholkow_boku = 101;
 	uint32_t liczba_iteracji = 50;
 	uint32_t ile_pracy_na_jeden_watek = 30;
 	uint32_t max_liczba_watkow_w_bloku = 300;
@@ -941,11 +944,11 @@ struct test_absorbcji {
 		//spacer_benchowany.iteracjaA[spacer_benchowany.trwale.wierzcholki[((liczba_wierzcholkow_boku * liczba_wierzcholkow_boku) / 2) + (liczba_wierzcholkow_boku * liczba_wierzcholkow_boku) / 10 - liczba_wierzcholkow_boku / 5 - liczba_wierzcholkow_boku / 4 + 10 + liczba_wierzcholkow_boku].start_wartosci] = 0.5;
 		//spacer_benchowany.iteracjaA[spacer_benchowany.trwale.wierzcholki[(liczba_wierzcholkow_boku * liczba_wierzcholkow_boku) / 2 - liczba_wierzcholkow_boku/2 - 6].start_wartosci] = jeden(zesp()) / std::sqrt(3.0);
 
-		spacer_benchowany.iteracjaA[spacer_benchowany.trwale.wierzcholki[(liczba_wierzcholkow_boku * liczba_wierzcholkow_boku) / 2 - liczba_wierzcholkow_boku].start_wartosci] = jeden(zesp()) / 2.0;
-		spacer_benchowany.iteracjaA[spacer_benchowany.trwale.wierzcholki[(liczba_wierzcholkow_boku * liczba_wierzcholkow_boku) / 2].start_wartosci] = jeden(zesp()) / 2.0;
+		spacer_benchowany.iteracjaA[spacer_benchowany.trwale.wierzcholki[(liczba_wierzcholkow_boku * liczba_wierzcholkow_boku) / 2 - liczba_wierzcholkow_boku - 10 * liczba_wierzcholkow_boku - 10].start_wartosci] = jeden(zesp()) / sqrt(2.0);
+		//spacer_benchowany.iteracjaA[spacer_benchowany.trwale.wierzcholki[(liczba_wierzcholkow_boku * liczba_wierzcholkow_boku) / 2 - 10 * liczba_wierzcholkow_boku - 10].start_wartosci] = jeden(zesp()) / 2.0;
 
-		spacer_benchowany.iteracjaA[spacer_benchowany.trwale.wierzcholki[(liczba_wierzcholkow_boku * liczba_wierzcholkow_boku) / 2 - liczba_wierzcholkow_boku].start_wartosci + 2] = jeden(zesp()) / 2.0;
-		spacer_benchowany.iteracjaA[spacer_benchowany.trwale.wierzcholki[(liczba_wierzcholkow_boku * liczba_wierzcholkow_boku) / 2].start_wartosci + 2] = jeden(zesp()) / 2.0;
+		spacer_benchowany.iteracjaA[spacer_benchowany.trwale.wierzcholki[(liczba_wierzcholkow_boku * liczba_wierzcholkow_boku) / 2 - liczba_wierzcholkow_boku - 10 * liczba_wierzcholkow_boku - 10].start_wartosci + 2] = jeden(zesp()) / sqrt(2.0);
+		//spacer_benchowany.iteracjaA[spacer_benchowany.trwale.wierzcholki[(liczba_wierzcholkow_boku * liczba_wierzcholkow_boku) / 2 - 10 * liczba_wierzcholkow_boku - 10].start_wartosci + 2] = jeden(zesp()) / 2.0;
 
 		spacer_benchowany.zapisz_iteracje();
 
@@ -1036,8 +1039,8 @@ struct test_absorbcji {
 			spacer::dane_iteracji<zesp>& iteracja = *(spacer_cpu.iteracje_zapamietane[i]);
 			czasy_cpu[i] = iteracja.czas;
 			grafiki_iteracji_cpu[i] = grafika_P_kierunkow_dla_kraty_2D(spacer_cpu,
-				iteracja, width, height, &(prawdopodop_cpu[i]));
-			grafiki_iteracji_cpu_kierunki[i] = grafiki_P_kierunkow_dla_kraty_2D(spacer_cpu, iteracja, width, height);
+				iteracja, width, height, &(prawdopodop_cpu[i]), wzmocnienie);
+			//grafiki_iteracji_cpu_kierunki[i] = grafiki_P_kierunkow_dla_kraty_2D(spacer_cpu, iteracja, width, height);
 		}
 	}
 
@@ -1055,8 +1058,8 @@ struct test_absorbcji {
 			spacer::dane_iteracji<zesp>& iteracja = *(spacer_gpu.iteracje_zapamietane[i]);
 			czasy_gpu[i] = iteracja.czas;
 			grafiki_iteracji_gpu[i] = grafika_P_kierunkow_dla_kraty_2D(spacer_gpu,
-				iteracja, width, height, &(prawdopodop_gpu[i]));
-			grafiki_iteracji_gpu_kierunki[i] = grafiki_P_kierunkow_dla_kraty_2D(spacer_gpu, iteracja, width, height);
+				iteracja, width, height, &(prawdopodop_gpu[i]), wzmocnienie);
+			//grafiki_iteracji_gpu_kierunki[i] = grafiki_P_kierunkow_dla_kraty_2D(spacer_gpu, iteracja, width, height);
 		}
 	}
 
@@ -1067,9 +1070,9 @@ struct test_absorbcji {
 		ImGui::Text("GPU: t = %lf", spacer_gpu.iteracje_zapamietane[pokazywana_grafika_gpu]->czas);
 		ImGui::SliderFloat("Okres pokazu slajdow(1.0 to brak pokazu)", &okres_pokazu_slajdow, 0.01f, 1.0f);
 
-		plot_spacer_dla_kraty_2D(spacer_cpu, pokazywana_grafika_cpu, grafiki_iteracji_cpu_kierunki[pokazywana_grafika_cpu], przestrzen, G_cpu, width, height, skala_obrazu, "spacer cpu");
+		plot_spacer_dla_kraty_2D(spacer_cpu, pokazywana_grafika_cpu, przestrzen, G_cpu, width, height, skala_obrazu, "spacer cpu");
 		ImGui::SameLine();
-		plot_spacer_dla_kraty_2D(spacer_gpu, pokazywana_grafika_gpu, grafiki_iteracji_gpu_kierunki[pokazywana_grafika_gpu], przestrzen, G_gpu, width, height, skala_obrazu, "spacer gpu");
+		plot_spacer_dla_kraty_2D(spacer_gpu, pokazywana_grafika_gpu, przestrzen, G_gpu, width, height, skala_obrazu, "spacer gpu");
 
 		ImGui::Text("Czas gpu: %ld ms", czas_gpu_ys / 1000UL);
 		ImGui::Text("Czas cpu: %ld ms", czas_cpu_ys / 1000UL);
@@ -1144,6 +1147,16 @@ struct test_absorbcji {
 		ImGui::SliderInt("Max liczba watkow w bloku", (int*)&max_liczba_watkow_w_bloku, 1, 900);
 		ImGui::SliderInt("Co ile normalizuj", &co_ile_normalizuj, 1, 1000);
 		ImGui::SliderInt("Co ile absorbuj", &co_ile_absorbuj, 1, 10000);
+		if(ImGui::Button("Nowa transformata")){
+			TMCQ temp(losowa_transformata(4));
+			spacer_benchowany.trwale.zamien_transformate(0, temp);
+			spacer_benchowany.trwale.zamien_transformate(1, temp);
+		}
+		ImGui::SliderFloat("Wzmocnienie", &wzmocnienie, 1.0f, 10.0f);
+		if(ImGui::Button("Wygeneruj grafiki")){
+			przygotuj_grafiki_cpu();
+			przygotuj_grafiki_gpu();
+		}
 		if (ImGui::Button("Przelicz cpu")) {
 			przelicz_cpu();
 		}

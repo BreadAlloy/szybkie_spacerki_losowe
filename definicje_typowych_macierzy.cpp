@@ -62,3 +62,11 @@ zesp dane_F_kolejnosc[16] = { 0.0, 0.0, 1.0, 0.0,
 const transformata_macierz<zesp> FK(4, dane_F_kolejnosc);
 
 const transformata_macierz<zesp> TJF(mnoz(std_kierunki_krata, FK));
+
+//					        Fourier 4x4
+double sqrt_4 = sqrt(4.0);
+zesp dane_Fourier_4[16] = { zesp(1.0, 0.0) / sqrt_4, zesp(1.0, 0.0)  / sqrt_4, zesp(1.0, 0.0)  / sqrt_4, zesp(1.0, 0.0)  / sqrt_4,
+							zesp(1.0, 0.0) / sqrt_4, zesp(0.0, -1.0) / sqrt_4, zesp(-1.0, 0.0) / sqrt_4, zesp(0.0, 1.0)  / sqrt_4,
+							zesp(1.0, 0.0) / sqrt_4, zesp(-1.0, 0.0) / sqrt_4, zesp(1.0, 0.0)  / sqrt_4, zesp(-1.0, 0.0) / sqrt_4,
+							zesp(1.0, 0.0) / sqrt_4, zesp(0.0, 1.0)  / sqrt_4, zesp(-1.0, 0.0) / sqrt_4, zesp(0.0, -1.0) / sqrt_4 };
+const transformata_macierz<zesp> Fourier_4(4, dane_Fourier_4);

@@ -88,10 +88,11 @@ struct grafika {
 
     }
 
-    // Nie przetestowane jeszcze
-    void SaveToFile(std::string nazwa_pliku){
+    int SaveToFile(std::string nazwa_pliku){
         ASSERT_Z_ERROR_MSG(data != nullptr, "Nie ma nic w pamieci\n");
-        stbi_write_bmp(nazwa_pliku.c_str(), width, height, 1, (void*)data);
+        int ret = stbi_write_bmp(nazwa_pliku.c_str(), width, height, 4, (void*)data);
+        ASSERT_Z_ERROR_MSG(ret == TRUE, "Cos nie tak z zapisywaniem bitmapy\n");
+        return ret;
     }
 
     bool LoadTextureFromMemory(bool zwolnij = true)
@@ -122,8 +123,8 @@ struct grafika {
 
         if(zwolnij){
             free(data);
+            data = nullptr;
         }
-        data = nullptr;
         return true;
     }
 
@@ -146,8 +147,8 @@ template <typename towar, typename transformata>
 __host__ std::vector<grafika*> grafiki_P_kierunkow_dla_kraty_2D(spacer_losowy<towar, transformata>& spacer, spacer::dane_iteracji<towar>& iteracja, uint32_t width, uint32_t height);
 
 template <typename towar, typename transformata>
-__host__ void plot_spacer_dla_kraty_2D(spacer_losowy<towar, transformata>& spacer, uint64_t pokazywana_grafika, std::vector<grafika*> kierunki, graf& przestrzen, grafika* G, uint32_t width, uint32_t height, float skala_obrazu, std::string nazwa_wykresu);
+__host__ void plot_spacer_dla_kraty_2D(spacer_losowy<towar, transformata>& spacer, uint64_t pokazywana_grafika, graf& przestrzen, grafika* G, uint32_t width, uint32_t height, float skala_obrazu, std::string nazwa_wykresu);
 
 template <typename towar, typename transformata>
-__host__ grafika* grafika_P_kierunkow_dla_kraty_2D(spacer_losowy<towar, transformata>& spacer, spacer::dane_iteracji<towar>& iteracja, uint32_t width, uint32_t height, double* suma_ptr = nullptr);
+__host__ grafika* grafika_P_kierunkow_dla_kraty_2D(spacer_losowy<towar, transformata>& spacer, spacer::dane_iteracji<towar>& iteracja, uint32_t width, uint32_t height, double* suma_ptr = nullptr, float wzmocnienie = 1.0, bool kasuj_data = true);
 

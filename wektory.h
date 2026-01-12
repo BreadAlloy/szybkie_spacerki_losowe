@@ -41,6 +41,18 @@ struct statyczny_wektor{ // wektor automatycznie mallocujacy i zwalnijacy, nie m
 		checkCudaErrors(cudaMemcpyAsync((void*)pamiec_device, (void*)pamiec_host, bajt_rozmiar(), cudaMemcpyHostToDevice, stream));
 	}
 
+	__host__ void cuda_zanies_do(cudaStream_t stream, typ_wskaznika* tu_zanies) {
+		if (rozmiar == 0) return;
+		ASSERT_Z_ERROR_MSG(pamiec_host != nullptr, "Nie ma pamieci na hoscie\n");
+		checkCudaErrors(cudaMemcpyAsync((void*)tu_zanies, (void*)pamiec_host, bajt_rozmiar(), cudaMemcpyHostToDevice, stream));
+	}
+
+	__host__ void cuda_przynies_z(cudaStream_t stream, typ_wskaznika* stad_przynies) {
+		if (rozmiar == 0) return;
+		ASSERT_Z_ERROR_MSG(pamiec_host != nullptr, "Nie ma pamieci na hoscie\n");
+		checkCudaErrors(cudaMemcpyAsync((void*)pamiec_host, (void*)stad_przynies, bajt_rozmiar(), cudaMemcpyDeviceToHost, stream));
+	}
+
 	__host__ void cuda_przynies(cudaStream_t stream){
 		if (rozmiar == 0) return;
 		ASSERT_Z_ERROR_MSG(pamiec_device != nullptr, "Nie ma pamieci na gpu\n");
@@ -54,6 +66,12 @@ struct statyczny_wektor{ // wektor automatycznie mallocujacy i zwalnijacy, nie m
 		checkCudaErrors(cudaFree((void*)pamiec_device));
 		pamiec_device = nullptr;
 	}
+
+	//__HD__ void zmien_rozmiar(uint64_t nowy_rozmiar){
+	//	if(rozmiar == nowy_rozmiar) return;
+	//	this->free();
+	//	this->malloc(nowy_rozmiar);
+	//}
 
 	__HD__ void memset(typ_wskaznika wartosc) {
 		for (size_t i = 0; i < rozmiar; i++) operator[](i) = wartosc;
@@ -72,6 +90,20 @@ struct statyczny_wektor{ // wektor automatycznie mallocujacy i zwalnijacy, nie m
 	__HD__ statyczny_wektor(const statyczny_wektor& kopiowany) : PAMIEC(nullptr), rozmiar(0) {
 		this->malloc(kopiowany.rozmiar);
 		::memcpy(this->PAMIEC, kopiowany.PAMIEC, kopiowany.bajt_rozmiar());
+	}
+
+	__HD__ void skontruuj_obiekty(const statyczny_wektor& kopiowane){
+		// trzeba uwa¿aæ aby nie nadpisaæ obiektów
+		ASSERT_Z_ERROR_MSG(rozmiar == kopiowane.rozmiar, "Nie ma tego samego rozmiaru\n");
+		for (uint64_t i = 0; i < rozmiar; i++) {
+			std::construct_at(PAMIEC + i, kopiowane[i]);
+		}
+	}
+
+	__HD__ void zniszcz_obiekty() {
+		for (uint64_t i = 0; i < rozmiar; i++) {
+			operator[](i).~typ_wskaznika();
+		}
 	}
 
 	__HD__ statyczny_wektor& operator=(const statyczny_wektor& kopiowany) {

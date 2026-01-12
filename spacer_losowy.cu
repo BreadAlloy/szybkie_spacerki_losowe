@@ -260,7 +260,7 @@ __host__ void iteracje_na_gpu(spacer_losowy<towar, transformata>& spacer, double
 		
 		iteracja_na_gpu<towar, transformata><<<(uint32_t)ile_blokow, (uint32_t)ile_watkow, 0, spacer.stream>>>(spacer.lokalizacja_na_device, ile_watkow, ile_blokow, ile_prac_na_watek);
 		if(i % co_ile_normalizuj == 0) {
-			przygotuj_do_normalizacji<towar, transformata>(spacer, spacer.trwale.gdzie_wyslac.rozmiar / 700UL);
+			przygotuj_do_normalizacji<towar, transformata>(spacer, spacer.trwale.gdzie_wyslac.rozmiar / 700UL + 1UL);
 		} else {
 			nie_normalizuj<towar, transformata><<<1, 1, 0, spacer.stream>>>(spacer.lokalizacja_na_device);
 		}
@@ -288,6 +288,8 @@ __host__ void iteracje_na_gpu(spacer_losowy<towar, transformata>& spacer, double
 		checkCudaErrors(cudaStreamSynchronize(spacer.stream));
 		checkCudaErrors(cudaGetLastError());
 	}
+	//checkCudaErrors(cudaStreamSynchronize(spacer.stream));
+	//checkCudaErrors(cudaGetLastError());
 }
 
 template __host__ void iteracje_na_gpu<zesp, TMDQ>(spacer_losowy<zesp, TMDQ>& spacer, double delta_t,

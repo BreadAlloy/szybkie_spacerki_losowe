@@ -117,6 +117,12 @@
     <ClCompile Include="eksperyment_dwuszczelinowy.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="alg_liniowa.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="losowe.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="imgui\imconfig.h">
@@ -227,11 +233,28 @@
     <ClInclude Include="eksperyment_dwuszczelinowy.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="alg_liniowa.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="losowe.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="zadanie.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="zapamietywacz.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="przejrzenie_reczne.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="transformata_fouriera.cuh" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="szybki_kalkulator.cu" />
     <CudaCompile Include="spacer_losowy.cu" />
     <CudaCompile Include="transformaty.cu" />
     <CudaCompile Include="zesp.cu" />
+    <CudaCompile Include="transformata_fouriera.cu" />
   </ItemGroup>
 </Project>

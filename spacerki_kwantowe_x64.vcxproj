@@ -19,6 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="alg_liniowa.h" />
     <ClInclude Include="definicje_typowych_macierzy.h" />
     <ClInclude Include="eksperyment_dwuszczelinowy.h" />
     <ClInclude Include="graf.h" />
@@ -35,7 +36,9 @@
     <ClInclude Include="imgui_i_grafika_setup.h" />
     <ClInclude Include="implot\implot.h" />
     <ClInclude Include="implot\implot_internal.h" />
+    <ClInclude Include="losowe.h" />
     <ClInclude Include="pomocne_funkcje.h" />
+    <ClInclude Include="przejrzenie_reczne.h" />
     <ClInclude Include="rzeczy_cudowe.h" />
     <ClInclude Include="spacer_2D_wizualizacja.h" />
     <ClInclude Include="spacer_losowy.h" />
@@ -51,12 +54,16 @@
     <ClInclude Include="src\SOIL\stb_image_aug.h" />
     <ClInclude Include="src\Texture.h" />
     <ClInclude Include="testy_czy_dziala.h" />
+    <ClInclude Include="transformata_fouriera.cuh" />
     <ClInclude Include="transformaty.h" />
     <ClInclude Include="transformaty_wyspecializowane.h" />
     <ClInclude Include="wektory.h" />
+    <ClInclude Include="zadanie.h" />
+    <ClInclude Include="zapamietywacz.h" />
     <ClInclude Include="zesp.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="alg_liniowa.cpp" />
     <ClCompile Include="definicje_typowych_macierzy.cpp" />
     <ClCompile Include="eksperyment_dwuszczelinowy.cpp" />
     <ClCompile Include="graf.cpp" />
@@ -71,6 +78,7 @@
     <ClCompile Include="implot\implot.cpp" />
     <ClCompile Include="implot\implot_demo.cpp" />
     <ClCompile Include="implot\implot_items.cpp" />
+    <ClCompile Include="losowe.cpp" />
     <ClCompile Include="pomocne_funkcje.cpp" />
     <ClCompile Include="spacer_losowy.cpp" />
     <ClCompile Include="szybkie_spacerki_losowe.cpp" />
@@ -116,6 +124,7 @@
   <ItemGroup>
     <CudaCompile Include="spacer_losowy.cu" />
     <CudaCompile Include="szybki_kalkulator.cu" />
+    <CudaCompile Include="transformata_fouriera.cu" />
     <CudaCompile Include="transformaty.cu" />
     <CudaCompile Include="zesp.cu" />
   </ItemGroup>
@@ -204,7 +213,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
       <AdditionalLibraryDirectories>$(SolutionDir)dependencies\glfw-3.3.8.bin.WIN64\lib-vc2022;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>opengl32.lib;$(SolutionDir)dependencies\freeglut\lib\x64\freeglut.lib;$(SolutionDir)dependencies\glew-2.0.0\lib\Release\x64\glew32.lib;$(SolutionDir)dependencies\glfw-3.3.8.bin.WIN64\lib-vc2022\glfw3.lib;$(SolutionDir)dependencies\glfw-3.3.8.bin.WIN64\lib-vc2022\glfw3dll.lib;$(SolutionDir)dependencies\assimp\x64\lib\Release\assimp-vc143-mt.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>opengl32.lib;cufft.lib;$(SolutionDir)dependencies\freeglut\lib\x64\freeglut.lib;$(SolutionDir)dependencies\glew-2.0.0\lib\Release\x64\glew32.lib;$(SolutionDir)dependencies\glfw-3.3.8.bin.WIN64\lib-vc2022\glfw3.lib;$(SolutionDir)dependencies\glfw-3.3.8.bin.WIN64\lib-vc2022\glfw3dll.lib;$(SolutionDir)dependencies\assimp\x64\lib\Release\assimp-vc143-mt.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <CudaCompile>
       <AdditionalDeps>
@@ -238,7 +247,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalLibraryDirectories>$(SolutionDir)dependencies\glfw-3.3.8.bin.WIN64\lib-vc2022;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>opengl32.lib;$(SolutionDir)dependencies\freeglut\lib\x64\freeglut.lib;$(SolutionDir)dependencies\glew-2.0.0\lib\Release\x64\glew32.lib;$(SolutionDir)dependencies\glfw-3.3.8.bin.WIN64\lib-vc2022\glfw3.lib;$(SolutionDir)dependencies\glfw-3.3.8.bin.WIN64\lib-vc2022\glfw3dll.lib;$(SolutionDir)dependencies\assimp\x64\lib\Release\assimp-vc143-mt.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>opengl32.lib;cufft.lib;$(SolutionDir)dependencies\freeglut\lib\x64\freeglut.lib;$(SolutionDir)dependencies\glew-2.0.0\lib\Release\x64\glew32.lib;$(SolutionDir)dependencies\glfw-3.3.8.bin.WIN64\lib-vc2022\glfw3.lib;$(SolutionDir)dependencies\glfw-3.3.8.bin.WIN64\lib-vc2022\glfw3dll.lib;$(SolutionDir)dependencies\assimp\x64\lib\Release\assimp-vc143-mt.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <CudaCompile>
       <AdditionalOptions>-Wno-deprecated-gpu-targets --std c++20 -Xptxas -v %(AdditionalOptions)</AdditionalOptions>

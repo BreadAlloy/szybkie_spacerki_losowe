@@ -44,3 +44,6 @@ extern const transformata_macierz<zesp> IxX;
 extern const transformata_macierz<zesp> FK;
 #define FilipKolejnsc FK
 extern const transformata_macierz<zesp> TJF;
+
+//					        Fourier 4x4
+extern const transformata_macierz<zesp> Fourier_4;

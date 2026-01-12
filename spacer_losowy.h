@@ -118,6 +118,38 @@ struct dane_trwale{ //operatory, to gdzie wysy³aæ, przestrzen, raczej nie zmieni
 		}
 	}
 
+	dane_trwale(const dane_trwale& kopiowane)
+	: gdzie_wyslac(kopiowane.gdzie_wyslac)
+	, wierzcholki(kopiowane.wierzcholki)
+	, znajdywacz_wierzcholka(kopiowane.znajdywacz_wierzcholka)
+	, indeksy_absorbowane(kopiowane.indeksy_absorbowane)
+	, poczatkowe_prawdopodobienstwo(kopiowane.poczatkowe_prawdopodobienstwo)
+	, transformaty(kopiowane.transformaty.rozmiar)
+	{
+		transformaty.skontruuj_obiekty(kopiowane.transformaty);
+	}
+
+	dane_trwale& operator=(const dane_trwale& kopiowane) {
+		gdzie_wyslac = kopiowane.gdzie_wyslac;
+		wierzcholki = kopiowane.wierzcholki;
+		znajdywacz_wierzcholka = kopiowane.znajdywacz_wierzcholka;
+		indeksy_absorbowane = kopiowane.indeksy_absorbowane;
+		poczatkowe_prawdopodobienstwo = kopiowane.poczatkowe_prawdopodobienstwo;
+		transformaty = kopiowane.transformaty;
+		transformaty.skontruuj_obiekty(kopiowane.transformaty);
+		return *this;
+	}
+
+	~dane_trwale(){
+		gdzie_wyslac.~statyczny_wektor<uint64_t>();
+		wierzcholki.~statyczny_wektor<spacer::wierzcholek>();
+		znajdywacz_wierzcholka.~statyczny_wektor<info_pracownika>();
+		indeksy_absorbowane.~statyczny_wektor<uint64_t>();
+
+		transformaty.zniszcz_obiekty();
+		transformaty.~statyczny_wektor<transformata>();
+	}
+
 	// mo¿na przygotowac dopiero po dodaniu transformat
 	__host__ void przygotuj_znajdywacz_wierzcholka(){
 		uint64_t ile_prac = 0;
@@ -245,6 +277,7 @@ struct dane_trwale{ //operatory, to gdzie wysy³aæ, przestrzen, raczej nie zmieni
 	}
 
 	__host__ void zamien_transformate(uint32_t index_do_wymiany, transformata& wkladana) {
+		// Nie sprawdza poprawnosci transforamty
 		ASSERT_Z_ERROR_MSG(index_do_wymiany < transformaty.rozmiar, "Nie ma transformaty o takim indeksie\n");
 		transformata& wymieniana = transformaty[index_do_wymiany];
 		ASSERT_Z_ERROR_MSG(wymieniana.arrnosc == wkladana.arrnosc, "Wkladana transformata ma inna arrnosc\n");

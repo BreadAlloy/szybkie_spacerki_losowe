@@ -18,9 +18,17 @@
 
 #include "testy_czy_dziala.h"
 
+#include "alg_liniowa.h"
+
+#include "zadanie.h"
+
+#include "przejrzenie_reczne.h"
+
+
 // Main code
 int main(int argc, char** argv)
 {
+
     //assert(false);
     /*        Test czy CUDA dzia³a          */
     //int mmmmain(int argc, char** argv);
@@ -48,9 +56,14 @@ int main(int argc, char** argv)
     //test_spaceru_kwantowy_ciagly TSQC;
     //test_czasow_wykonania_kwantowy TCWQ;
     //test_sciezki_spaceru_kwantowy_dyskretny TSSKD;
-    test_absorbcji TA;
+    //test_absorbcji TA;
 
     //test_funkcji_tworzacych_grafy();
+    //test_ortonormalizacji();
+
+    //przejrzenie_przestrzeni_opertatorow_mozliwych_tensorowo();
+    //przejrzenie_stanow_poczatkowych();
+    przejrzenie_reczne<TMCQ> przegladacz("tensorowe_transformaty_bezfazy");
 
     while (!glfwWindowShouldClose(window))
     {
@@ -77,7 +90,8 @@ int main(int argc, char** argv)
         //TSQC.pokaz_okno(*io);
         //TCWQ.pokaz_okno(*io);
         //TSSKD.pokaz_okno(*io);
-        TA.pokaz_okno(*io);
+        //TA.pokaz_okno(*io);
+        przegladacz.pokaz_okno();
 
         //processInput(window); // z grafiki
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // czesciowo z grafiki

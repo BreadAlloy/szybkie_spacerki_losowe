@@ -119,7 +119,7 @@ __host__ spacer_losowy<towar, transformata> spacer_krata_2D_cykl(
 	bool zkasuj = false;
 	if (krata == nullptr) {
 		//czy to nie jest niewydajne?
-		krata = new graf(graf_krata_2D(liczba_wierzcholkow_boku, BEZ_NAZW));
+		krata = new graf(graf_krata_2D_cykl(liczba_wierzcholkow_boku, BEZ_NAZW));
 		zkasuj = true;
 	}
 

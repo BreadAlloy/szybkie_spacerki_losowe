@@ -48,7 +48,8 @@ constexpr double dt = 0.01;
 struct transformata_macierz_ciagla_kwantowa : transformata_macierz<zesp> {
 	typedef transformata_macierz_ciagla_kwantowa TMCQ;
 
-	const zesp schrodinger = zesp(0.0, -1.0) * dt;
+	// const
+	zesp schrodinger = zesp(0.0, -1.0) * dt;
 
 	transformata_macierz_ciagla_kwantowa(transformata_macierz<zesp> M)
 		: transformata_macierz<zesp>(M) {

@@ -310,7 +310,7 @@ __host__ std::vector<grafika*> grafiki_P_kierunkow_dla_kraty_2D(spacer_losowy<to
 template __host__ std::vector<grafika*> grafiki_P_kierunkow_dla_kraty_2D(spacer_losowy<zesp, TMCQ>& spacer, spacer::dane_iteracji<zesp>& iteracja, uint32_t width, uint32_t height);
 
 template <typename towar, typename transformata>
-__host__ void plot_spacer_dla_kraty_2D(spacer_losowy<towar, transformata>& spacer, uint64_t pokazywana_grafika, std::vector<grafika*> kierunki, graf& przestrzen, grafika* G, uint32_t width, uint32_t height, float skala_obrazu, std::string nazwa_wykresu) {
+__host__ void plot_spacer_dla_kraty_2D(spacer_losowy<towar, transformata>& spacer, uint64_t pokazywana_grafika, graf& przestrzen, grafika* G, uint32_t width, uint32_t height, float skala_obrazu, std::string nazwa_wykresu) {
 	// Nie sprawdza czy grafika nale¿y do tej iteracji
 
 	ImVec2 bmin(0.0, 0.0);
@@ -319,10 +319,10 @@ __host__ void plot_spacer_dla_kraty_2D(spacer_losowy<towar, transformata>& space
 	ImVec2 uv1(1.0, -1.0); // bo tak tworze osie przy tworzeniu grafu
 	if (ImPlot::BeginPlot(nazwa_wykresu.c_str(), ImVec2(skala_obrazu * 200.0f, skala_obrazu * 200.0f), ImPlotFlags_Equal)) {
 		ImPlot::PlotImage("P", (ImTextureID)(intptr_t)(G->texture), bmin, bmax, uv0, uv1);
-		ImPlot::PlotImage("P_0", (ImTextureID)(intptr_t)(kierunki[0]->texture), bmin, bmax, uv0, uv1);
-		ImPlot::PlotImage("P_1", (ImTextureID)(intptr_t)(kierunki[1]->texture), bmin, bmax, uv0, uv1);
-		ImPlot::PlotImage("P_2", (ImTextureID)(intptr_t)(kierunki[2]->texture), bmin, bmax, uv0, uv1);
-		ImPlot::PlotImage("P_3", (ImTextureID)(intptr_t)(kierunki[3]->texture), bmin, bmax, uv0, uv1);
+		//ImPlot::PlotImage("P_0", (ImTextureID)(intptr_t)(kierunki[0]->texture), bmin, bmax, uv0, uv1);
+		//ImPlot::PlotImage("P_1", (ImTextureID)(intptr_t)(kierunki[1]->texture), bmin, bmax, uv0, uv1);
+		//ImPlot::PlotImage("P_2", (ImTextureID)(intptr_t)(kierunki[2]->texture), bmin, bmax, uv0, uv1);
+		//ImPlot::PlotImage("P_3", (ImTextureID)(intptr_t)(kierunki[3]->texture), bmin, bmax, uv0, uv1);
 		if (ImPlot::IsPlotHovered() && ImGui::GetIO().KeyCtrl) {
 			ImPlotPoint pt = ImPlot::GetPlotMousePos();
 			uint64_t i = (uint64_t)(pt.x);
@@ -352,7 +352,7 @@ __host__ void plot_spacer_dla_kraty_2D(spacer_losowy<towar, transformata>& space
 	}
 }
 
-template __host__ void plot_spacer_dla_kraty_2D(spacer_losowy<zesp, TMCQ>& spacer, uint64_t pokazywana_grafika, std::vector<grafika*> kierunki, graf& przestrzen, grafika* G, uint32_t width, uint32_t height, float skala_obrazu, std::string nazwa_wykresu);
+template __host__ void plot_spacer_dla_kraty_2D(spacer_losowy<zesp, TMCQ>& spacer, uint64_t pokazywana_grafika, graf& przestrzen, grafika* G, uint32_t width, uint32_t height, float skala_obrazu, std::string nazwa_wykresu);
 
 glm::vec3 kolor0(108.0f / 255.0f, 255.0f / 255.0f, 66.0f  / 255.0f);
 glm::vec3 kolor1(255.0f / 255.0f, 77.0f  / 255.0f, 223.0f / 255.0f);
@@ -360,7 +360,7 @@ glm::vec3 kolor2(255.0f / 255.0f, 187.0f / 255.0f, 77.0f  / 255.0f);
 glm::vec3 kolor3(66.0f  / 255.0f, 164.0f / 255.0f, 255.0f / 255.0f);
 
 template <typename towar, typename transformata>
-__host__ grafika* grafika_P_kierunkow_dla_kraty_2D(spacer_losowy<towar, transformata>& spacer, spacer::dane_iteracji<towar>& iteracja, uint32_t width, uint32_t height, double* suma_ptr) {
+__host__ grafika* grafika_P_kierunkow_dla_kraty_2D(spacer_losowy<towar, transformata>& spacer, spacer::dane_iteracji<towar>& iteracja, uint32_t width, uint32_t height, double* suma_ptr, float wzmocnienie, bool kasuj_data) {
 	// nie sprawdzam czy iteracja nale¿y do spaceru.
 	// potem trzeba zrobic delete grafika*
 
@@ -380,7 +380,7 @@ __host__ grafika* grafika_P_kierunkow_dla_kraty_2D(spacer_losowy<towar, transfor
 		max = MAX(max, prawdopodobienstwo);
 	}
 
-	float normalizator = (float)(255.0 / max);
+	float normalizator = (float)(255.0 / max) * wzmocnienie;
 	for (uint64_t j = 0; j < spacer.trwale.liczba_wierzcholkow(); j++) {
 		spacer::wierzcholek& wierzcholek = spacer.trwale.wierzcholki[j];
 
@@ -390,6 +390,15 @@ __host__ grafika* grafika_P_kierunkow_dla_kraty_2D(spacer_losowy<towar, transfor
 		kolor += normalizator * (float)P(iteracja.wartosci[wierzcholek.start_wartosci + 2]) * kolor2;
 		kolor += normalizator * (float)P(iteracja.wartosci[wierzcholek.start_wartosci + 3]) * kolor3;
 
+		float odciecie_gora = 0.0f;
+		odciecie_gora = MAX(odciecie_gora, kolor.x);
+		odciecie_gora = MAX(odciecie_gora, kolor.y);
+		odciecie_gora = MAX(odciecie_gora, kolor.z);
+
+		if(odciecie_gora > 255.0f){
+			kolor = kolor * (255.0f / odciecie_gora);
+		}
+	
 		(G->data)[4 * j + 0] = (uint8_t)kolor.x;  // R
 		(G->data)[4 * j + 1] = (uint8_t)kolor.y;  // G
 		(G->data)[4 * j + 2] = (uint8_t)kolor.z;  // B
@@ -397,8 +406,8 @@ __host__ grafika* grafika_P_kierunkow_dla_kraty_2D(spacer_losowy<towar, transfor
 	}
 
 	if (suma_ptr != nullptr) *suma_ptr = prawdopodobienstwo_suma;
-	G->LoadTextureFromMemory();
+	G->LoadTextureFromMemory(kasuj_data);
 	return G;
 }
 
-template __host__ grafika* grafika_P_kierunkow_dla_kraty_2D(spacer_losowy<zesp, TMCQ>& spacer, spacer::dane_iteracji<zesp>& iteracja, uint32_t width, uint32_t height, double* suma_ptr);
+template __host__ grafika* grafika_P_kierunkow_dla_kraty_2D(spacer_losowy<zesp, TMCQ>& spacer, spacer::dane_iteracji<zesp>& iteracja, uint32_t width, uint32_t height, double* suma_ptr, float wzmocnienie, bool kasuj_data);
