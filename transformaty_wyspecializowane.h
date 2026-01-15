@@ -18,7 +18,7 @@ struct transformata_macierz_dyskretna_klasyczna : transformata_macierz<double>{
 		TMDK& transformata = trwale.transformaty[wierzcholek.transformer];
 		estetyczny_wektor<double> a(&(iteracja_z[wierzcholek.start_wartosci]), wierzcholek.liczba_kierunkow);
 		estetyczny_wektor<double> b(&(transformata((uint8_t)index_w_wierzcholku, 0)), transformata.arrnosc);
-		iteracja_do[trwale.gdzie_wyslac[wierzcholek.start_wartosci + index_w_wierzcholku]] = dot(b, a);
+		iteracja_do[(uint64_t)trwale.gdzie_wyslac[wierzcholek.start_wartosci + index_w_wierzcholku]] = dot(b, a);
 	}
 };
 
@@ -36,7 +36,7 @@ struct transformata_macierz_dyskretna_kwantowa : transformata_macierz<zesp> {
 		TMDQ& transformata = trwale.transformaty[wierzcholek.transformer];
 		estetyczny_wektor<zesp> a(&(iteracja_z[wierzcholek.start_wartosci]), wierzcholek.liczba_kierunkow);
 		estetyczny_wektor<zesp> b(&(transformata((uint8_t)index_w_wierzcholku, 0)), transformata.arrnosc);
-		iteracja_do[trwale.gdzie_wyslac[wierzcholek.start_wartosci + index_w_wierzcholku]] = dot(b, a);
+		iteracja_do[(uint64_t)trwale.gdzie_wyslac[wierzcholek.start_wartosci + index_w_wierzcholku]] = dot(b, a);
 	}
 };
 
@@ -65,7 +65,7 @@ struct transformata_macierz_ciagla_kwantowa : transformata_macierz<zesp> {
 		//for(uint64_t i = 0; i < wierzcholek.liczba_kierunkow; i++){
 			estetyczny_wektor<zesp> a(&(iteracja_z[wierzcholek.start_wartosci]), wierzcholek.liczba_kierunkow);
 			estetyczny_wektor<zesp> b(&(transformata((uint8_t)index_w_wierzcholku, 0)), transformata.arrnosc);
-			uint64_t offset_do = trwale.gdzie_wyslac[wierzcholek.start_wartosci + index_w_wierzcholku];
+			uint64_t offset_do = (uint64_t)trwale.gdzie_wyslac[wierzcholek.start_wartosci + index_w_wierzcholku];
 			zesp PSI = (iteracja_z[offset_do] + schrodinger * dot(b, a)) * iteracja_z.norma_poprzedniej_iteracji;
 			//dP += (P(PSI) - P(iteracja_z[offset_do]));
 			iteracja_do[offset_do] = PSI;

@@ -31,21 +31,24 @@ constexpr typ_prawdopodobienstwa tolerancja = 1.0e-10;
 
 namespace spacer{
 
+typedef uint32_t idW_t;
+typedef uint8_t idT_t;
+
 struct wierzcholek{
-	uint64_t start_wartosci = (uint64_t)(-1);
-	uint64_t transformer = (uint64_t)(-1);
+	idW_t start_wartosci = (idW_t)(-1);
+	idT_t transformer = (idT_t)(-1);
 	uint8_t liczba_kierunkow = 0; //tyle w¹tków potrzeba
 
-	__HD__ wierzcholek(uint64_t start_wartosci = (uint64_t)-1, uint8_t liczba_kierunkow = 0)
+	__HD__ wierzcholek(idW_t start_wartosci = (idW_t)-1, uint8_t liczba_kierunkow = 0)
 	: start_wartosci(start_wartosci), liczba_kierunkow(liczba_kierunkow){}
 
 };
 
 struct info_pracownika {
-	uint32_t index_wierzcholka;
+	idW_t index_wierzcholka;
 	uint8_t index_w_wierzcholku;
 
-	__HD__ info_pracownika(uint32_t index_wierzcholka, uint8_t index_w_wierzcholku)
+	__HD__ info_pracownika(idW_t index_wierzcholka, uint8_t index_w_wierzcholku)
 		: index_w_wierzcholku(index_w_wierzcholku), index_wierzcholka(index_wierzcholka) {
 	}
 
@@ -86,13 +89,14 @@ struct uklad_transformat{ // zbiornik na transformaty potem bêdzie sprawdzane cz
 //__constant__ info_pracownika niepotrzebny_pracownik((uint32_t)-1, (uint8_t)-1);
 //)
 
+
 template<typename transformata>
 struct dane_trwale{ //operatory, to gdzie wysy³aæ, przestrzen, raczej nie zmienia sie z czasem
-	statyczny_wektor<uint64_t> gdzie_wyslac; // krawedzie w grafie
+	statyczny_wektor<idW_t> gdzie_wyslac; // krawedzie w grafie
 	statyczny_wektor<spacer::wierzcholek> wierzcholki;
 	statyczny_wektor<info_pracownika> znajdywacz_wierzcholka; // znajduje wierzcholek na podstawie indexu watka
 	statyczny_wektor<transformata> transformaty;
-	statyczny_wektor<uint64_t> indeksy_absorbowane;
+	statyczny_wektor<idW_t> indeksy_absorbowane;
 	double poczatkowe_prawdopodobienstwo = 1.0;
 
 	__host__ dane_trwale(const graf& przestrzen) {
@@ -103,7 +107,7 @@ struct dane_trwale{ //operatory, to gdzie wysy³aæ, przestrzen, raczej nie zmieni
 		uint64_t suma_kubelkow = 0;
 		for (ID_W i = 0; i < przestrzen.liczba_wierzcholkow(); i++) {
 			uint8_t liczba_kierunkow = przestrzen.wierzcholki[i].liczba_polaczen();
-			wierzcholki[i] = spacer::wierzcholek(suma_kubelkow, liczba_kierunkow);
+			wierzcholki[i] = spacer::wierzcholek((idW_t)suma_kubelkow, liczba_kierunkow);
 			suma_kubelkow += liczba_kierunkow;
 		}
 
@@ -114,7 +118,7 @@ struct dane_trwale{ //operatory, to gdzie wysy³aæ, przestrzen, raczej nie zmieni
 			grafowe::krawedz k = przestrzen.krawedzie[i];
 			size_t index_z = wierzcholki[k.index_wierzcholka_z].start_wartosci + k.index_kubelka_z;
 			size_t index_do = wierzcholki[k.index_wierzcholka_do].start_wartosci + k.index_kubelka_do;
-			gdzie_wyslac[index_z] = index_do;
+			gdzie_wyslac[index_z] = (idW_t)index_do;
 		}
 	}
 
@@ -141,10 +145,10 @@ struct dane_trwale{ //operatory, to gdzie wysy³aæ, przestrzen, raczej nie zmieni
 	}
 
 	~dane_trwale(){
-		gdzie_wyslac.~statyczny_wektor<uint64_t>();
+		gdzie_wyslac.~statyczny_wektor<idW_t>();
 		wierzcholki.~statyczny_wektor<spacer::wierzcholek>();
 		znajdywacz_wierzcholka.~statyczny_wektor<info_pracownika>();
-		indeksy_absorbowane.~statyczny_wektor<uint64_t>();
+		indeksy_absorbowane.~statyczny_wektor<idW_t>();
 
 		transformaty.zniszcz_obiekty();
 		transformaty.~statyczny_wektor<transformata>();
@@ -193,7 +197,7 @@ struct dane_trwale{ //operatory, to gdzie wysy³aæ, przestrzen, raczej nie zmieni
 				error = true;
 				printf("Transformata na wierzcholek: %lld o indeksie jest na zla arrnosc. Powinno byc %d, a jest %d\n", i, wierzcholki[i].liczba_kierunkow, uklad.jaka_transformata_na(i).arrnosc);
 			}
-			wierzcholki[i].transformer = uklad.indeksy[i];
+			wierzcholki[i].transformer = (idT_t)uklad.indeksy[i];
 		}
 		ASSERT_Z_ERROR_MSG(!error, "Jedna albo wiecej arrnosci sie nie zgadza\n");
 		
@@ -216,7 +220,7 @@ struct dane_trwale{ //operatory, to gdzie wysy³aæ, przestrzen, raczej nie zmieni
 			for(uint64_t j = 0; j < i; j++){
 				ASSERT_Z_ERROR_MSG(indeks_absorbowany != indeksy_absorbowane[j], "Wierzcholkek %d, i kubelek %d sa juz absorbowane\n" SEP gdzie.index_wierzcholka SEP gdzie.index_w_wierzcholku);
 			}
-			indeksy_absorbowane[i] = indeks_absorbowany;
+			indeksy_absorbowane[i] = (idW_t)indeks_absorbowany;
 		}
 	}
 

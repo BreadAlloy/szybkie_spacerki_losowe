@@ -162,12 +162,9 @@ __global__ void iteracja_na_gpu(spacer::dane_trwale<transformata>* trwale, space
 
 		spacer::info_pracownika IP = trwale->znajdz_wierzcholek(index_pracownika);
 
-		uint32_t index_wierzcholka = IP.index_wierzcholka;
-		uint8_t index_w_wierzcholku = IP.index_w_wierzcholku;
+		spacer::wierzcholek& wierzcholek = trwale->wierzcholki[IP.index_wierzcholka];
 
-		spacer::wierzcholek& wierzcholek = trwale->wierzcholki[index_wierzcholka];
-
-		trwale->transformaty[wierzcholek.transformer].transformuj(*trwale, wierzcholek, *iteracja_z, *iteracja_do, index_w_wierzcholku, index_wierzcholka);
+		trwale->transformaty[wierzcholek.transformer].transformuj(*trwale, wierzcholek, *iteracja_z, *iteracja_do, IP.index_w_wierzcholku, IP.index_wierzcholka);
 	}
 }
 
