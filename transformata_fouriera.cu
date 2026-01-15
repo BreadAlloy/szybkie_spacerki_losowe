@@ -80,21 +80,21 @@ int main() {
     // inembed/onembed being nullptr indicates contiguous data for each batch, then the stride and dist settings are ignored
     cufftPlan3d(&plan, fft[0], fft[1], fft[2], CUFFT_Z2Z);
 
-    checkCudaErrors(cudaStreamCreateWithFlags(&stream, cudaStreamNonBlocking));
-    checkCudaErrors(cufftSetStream(plan, stream));
+    sprawdzCudaErrors(cudaStreamCreateWithFlags(&stream, cudaStreamNonBlocking));
+    sprawdzCudaErrors(cufftSetStream(plan, stream));
 
     // Create device data arrays
-    checkCudaErrors(cudaMalloc(reinterpret_cast<void**>(&d_data), sizeof(data_type) * data.size()));
-    checkCudaErrors(cudaMemcpyAsync(d_data, data.data(), sizeof(data_type) * data.size(), cudaMemcpyHostToDevice, stream));
+    sprawdzCudaErrors(cudaMalloc(reinterpret_cast<void**>(&d_data), sizeof(data_type) * data.size()));
+    sprawdzCudaErrors(cudaMemcpyAsync(d_data, data.data(), sizeof(data_type) * data.size(), cudaMemcpyHostToDevice, stream));
 
     /*
      * Note:
      *  Identical pointers to data and output arrays implies in-place transformation
      */
-    checkCudaErrors(cufftExecZ2Z(plan, d_data, d_data, CUFFT_FORWARD));
+    sprawdzCudaErrors(cufftExecZ2Z(plan, d_data, d_data, CUFFT_FORWARD));
     scaling_kernel << <1, 128, 0, stream >> > (d_data, data.size(), 1.0 / fft_size);
-    checkCudaErrors(cudaMemcpyAsync(data.data(), d_data, sizeof(data_type) * data.size(), cudaMemcpyDeviceToHost, stream));
-    checkCudaErrors(cudaStreamSynchronize(stream));
+    sprawdzCudaErrors(cudaMemcpyAsync(data.data(), d_data, sizeof(data_type) * data.size(), cudaMemcpyDeviceToHost, stream));
+    sprawdzCudaErrors(cudaStreamSynchronize(stream));
 
     std::printf("Output array after Forward transform:\n");
     for (int i = 0; i < 10; i++) {
@@ -103,11 +103,11 @@ int main() {
     std::printf("=====\n");
 
     // Normalize the data and inverse FFT
-    checkCudaErrors(cufftExecZ2Z(plan, d_data, d_data, CUFFT_INVERSE));
-    checkCudaErrors(cudaMemcpyAsync(data.data(), d_data, sizeof(data_type) * data.size(),
+    sprawdzCudaErrors(cufftExecZ2Z(plan, d_data, d_data, CUFFT_INVERSE));
+    sprawdzCudaErrors(cudaMemcpyAsync(data.data(), d_data, sizeof(data_type) * data.size(),
         cudaMemcpyDeviceToHost, stream));
 
-    checkCudaErrors(cudaStreamSynchronize(stream));
+    sprawdzCudaErrors(cudaStreamSynchronize(stream));
 
     std::printf("Output array after Forward, Normalization and Inverse transform:\n");
     for (int i = 0; i < 10; i++) {
@@ -118,10 +118,10 @@ int main() {
 
 
     /* free resources */
-    checkCudaErrors(cudaFree(d_data));
-    checkCudaErrors(cufftDestroy(plan));
-    checkCudaErrors(cudaStreamDestroy(stream));
-    checkCudaErrors(cudaDeviceReset());
+    sprawdzCudaErrors(cudaFree(d_data));
+    sprawdzCudaErrors(cufftDestroy(plan));
+    sprawdzCudaErrors(cudaStreamDestroy(stream));
+    sprawdzCudaErrors(cudaDeviceReset());
 
     return EXIT_SUCCESS;
 }

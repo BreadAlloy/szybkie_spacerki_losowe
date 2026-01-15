@@ -369,7 +369,9 @@ struct spacer_losowy{
 	spacer::dane_trwale<transformata> trwale;
 
 	spacer_losowy* lokalizacja_na_device = nullptr;
-	cudaStream_t stream = 0;
+	cudaStream_t stream_pamiec_operacje = 0;
+	cudaStream_t stream_iteracja = 0;
+	cudaStream_t stream_normalizacja = 0;
 
 	__host__ spacer_losowy(const graf& przestrzen, uint32_t max_iteracji_zapamietanych = 30000)
 	: trwale(przestrzen), iteracjaA(0), iteracjaB(0), iteracje_zapamietane(max_iteracji_zapamietanych){}
@@ -451,6 +453,20 @@ struct spacer_losowy{
 				trwale.transformaty[wierzcholek.transformer].transformuj(trwale, wierzcholek, *iteracja_z, *iteracja_do, j, i);
 			}
 		}
+	}
+
+	__HD__ spacer::dane_iteracji<towar>* iteracja_z(){
+		if(A){
+			return &iteracjaA;
+		}
+		return &iteracjaB;
+	}
+
+	__HD__ spacer::dane_iteracji<towar>* iteracja_do() {
+		if (!A) {
+			return &iteracjaA;
+		}
+		return &iteracjaB;
 	}
 
 	// rozproszona normalizacja niedzia³aj¹ca
@@ -586,21 +602,23 @@ struct spacer_losowy{
 	__host__ void zbuduj_na_cuda(){
 		ASSERT_Z_ERROR_MSG(lokalizacja_na_device == nullptr, "Juz jest na cudzie\n");
 
-		checkCudaErrors(cudaStreamCreateWithFlags(&stream, cudaStreamNonBlocking));
+		sprawdzCudaErrors(cudaStreamCreateWithFlags(&stream_pamiec_operacje, cudaStreamNonBlocking));
+		sprawdzCudaErrors(cudaStreamCreateWithFlags(&stream_iteracja, cudaStreamNonBlocking));
+		sprawdzCudaErrors(cudaStreamCreateWithFlags(&stream_normalizacja, cudaStreamNonBlocking));
 
-		checkCudaErrors(cudaMalloc(reinterpret_cast<void**>(&lokalizacja_na_device), sizeof(spacer_losowy)));
+		sprawdzCudaErrors(cudaMalloc(reinterpret_cast<void**>(&lokalizacja_na_device), sizeof(spacer_losowy)));
 
-		trwale.zbuduj_na_cuda(stream);
+		trwale.zbuduj_na_cuda(stream_pamiec_operacje);
 
 		iteracjaA.cuda_malloc();
-		iteracjaA.cuda_zanies(stream);
+		iteracjaA.cuda_zanies(stream_pamiec_operacje);
 
 		iteracjaB.cuda_malloc();
-		iteracjaB.cuda_zanies(stream);
+		iteracjaB.cuda_zanies(stream_pamiec_operacje);
 
-		checkCudaErrors(cudaMemcpyAsync((void*)lokalizacja_na_device, (void*)this, sizeof(spacer_losowy), cudaMemcpyHostToDevice, stream));
+		sprawdzCudaErrors(cudaMemcpyAsync((void*)lokalizacja_na_device, (void*)this, sizeof(spacer_losowy), cudaMemcpyHostToDevice, stream_pamiec_operacje));
 
-		checkCudaErrors(cudaStreamSynchronize(stream));
+		sprawdzCudaErrors(cudaStreamSynchronize(stream_pamiec_operacje));
 	}
 
 	__host__ void zapisz_iteracje_z_cuda(){
@@ -612,17 +630,17 @@ struct spacer_losowy{
 		spacer::dane_iteracji<towar>* zapisana = new spacer::dane_iteracji<towar>(trwale.liczba_kubelkow(), trwale.liczba_absorberow());
 		
 		zapisana->wartosci.pamiec_device = zapisywana->wartosci.pamiec_device;
-		zapisana->wartosci.cuda_przynies(stream);
+		zapisana->wartosci.cuda_przynies(stream_pamiec_operacje);
 		zapisana->wartosci.pamiec_device = nullptr;
 
 		zapisana->wartosci_zaabsorbowane.pamiec_device = zapisywana->wartosci_zaabsorbowane.pamiec_device;
-		zapisana->wartosci_zaabsorbowane.cuda_przynies(stream);
+		zapisana->wartosci_zaabsorbowane.cuda_przynies(stream_pamiec_operacje);
 		zapisana->wartosci_zaabsorbowane.pamiec_device = nullptr;
 
 		// Przynosi czas i wspolczynnik normalizacji, prawdopodobienstwo, zaabsorbowane
-		checkCudaErrors(cudaMemcpyAsync(&(zapisana->czas),
+		sprawdzCudaErrors(cudaMemcpyAsync(&(zapisana->czas),
 			A ? &lokalizacja_na_device->iteracjaA.czas : &lokalizacja_na_device->iteracjaB.czas,
-			4 * sizeof(double), cudaMemcpyDeviceToHost, stream));
+			4 * sizeof(double), cudaMemcpyDeviceToHost, stream_pamiec_operacje));
 
 		ASSERT_Z_ERROR_MSG((iteracje_zapamietane.rozmiar + 1) <= iteracje_zapamietane.rozmiar_zmallocowany, "Brakuje miejsca na kolejna iteracje\n");
 		iteracje_zapamietane.pushback(zapisana);
@@ -630,13 +648,13 @@ struct spacer_losowy{
 
 	__host__ void cuda_przynies(){
 		ASSERT_Z_ERROR_MSG(lokalizacja_na_device != nullptr, "Nie ma nic na cudzie\n");
-		iteracjaA.cuda_przynies(stream);
-		iteracjaB.cuda_przynies(stream);
+		iteracjaA.cuda_przynies(stream_pamiec_operacje);
+		iteracjaB.cuda_przynies(stream_pamiec_operacje);
 
 		// g³ównie po to aby czasy iteracji by³y przepisane
-		checkCudaErrors(cudaMemcpyAsync((void*)this, (void*)lokalizacja_na_device, offsetof(spacer_losowy, iteracje_zapamietane), cudaMemcpyDeviceToHost, stream));
+		sprawdzCudaErrors(cudaMemcpyAsync((void*)this, (void*)lokalizacja_na_device, offsetof(spacer_losowy, iteracje_zapamietane), cudaMemcpyDeviceToHost, stream_pamiec_operacje));
 
-		checkCudaErrors(cudaStreamSynchronize(stream));
+		sprawdzCudaErrors(cudaStreamSynchronize(stream_pamiec_operacje));
 	}
 
 	__host__ void zburz_na_cuda(){
@@ -647,17 +665,21 @@ struct spacer_losowy{
 		iteracjaA.cuda_free();
 		iteracjaB.cuda_free();
 
-		checkCudaErrors(cudaFree(lokalizacja_na_device));
+		sprawdzCudaErrors(cudaFree(lokalizacja_na_device));
 		lokalizacja_na_device = nullptr;
 
-		checkCudaErrors(cudaStreamDestroy(stream));
-		stream = 0;
+		sprawdzCudaErrors(cudaStreamDestroy(stream_pamiec_operacje));
+		stream_pamiec_operacje = 0;
+		sprawdzCudaErrors(cudaStreamDestroy(stream_iteracja));
+		stream_iteracja = 0;
+		sprawdzCudaErrors(cudaStreamDestroy(stream_normalizacja));
+		stream_normalizacja = 0;
 	}
 
 };
 
-__HD__ double dot(const estetyczny_wektor<double>&, const estetyczny_wektor<double>&);
-__HD__ zesp dot(const estetyczny_wektor<zesp>&, const estetyczny_wektor<zesp>&);
+extern __HD__ double dot(const estetyczny_wektor<double>&, const estetyczny_wektor<double>&);
+extern __HD__ zesp dot(const estetyczny_wektor<zesp>&, const estetyczny_wektor<zesp>&);
 
 
 //							---===SPACER LINIA===---

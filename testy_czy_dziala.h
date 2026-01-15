@@ -563,33 +563,35 @@ struct test_czasow_wykonania_kwantowy {
 	int pokazywana_grafika = 0;
 	float skala_obrazu = 1.0f;
 
-	const uint32_t liczba_wierzcholkow_boku = 3001;
+	const uint32_t liczba_wierzcholkow_boku = 501;
 	uint32_t liczba_iteracji = 10;
 	uint32_t ile_pracy_na_jeden_watek = 100;
 	uint32_t max_liczba_watkow_w_bloku = 100;
 
 	graf przestrzen;
-	spacer_losowy<zesp, TMDQ> spacer_benchowany;
+	spacer_losowy<zesp, TMCQ> spacer_benchowany;
 
-	spacer_losowy<zesp, TMDQ> spacer_cpu;
+	spacer_losowy<zesp, TMCQ> spacer_cpu;
 	uint64_t czas_cpu_ys = 0;
 	std::vector<grafika*> grafiki_iteracji_cpu;
 
-	spacer_losowy<zesp, TMDQ> spacer_gpu;
+	spacer_losowy<zesp, TMCQ> spacer_gpu;
 	uint64_t czas_gpu_ys = 0;
 	std::vector<grafika*> grafiki_iteracji_gpu;
+
+	int co_ile_zapisz = 100;
 
 	__host__ test_czasow_wykonania_kwantowy()
 		: nazwa_okna("Test czasow wykonania kwantowy")
 		, przestrzen(graf_krata_2D(liczba_wierzcholkow_boku))
-		, spacer_benchowany(spacer_krata_2D<zesp, TMDQ>(liczba_wierzcholkow_boku,
+		, spacer_benchowany(spacer_krata_2D<zesp, TMCQ>(liczba_wierzcholkow_boku,
 		 tensor(X, H), I_4, &przestrzen))
 		, spacer_cpu(spacer_benchowany)
 		, spacer_gpu(spacer_benchowany){
 
-		spacer_benchowany.iteracjaA[spacer_benchowany.trwale.wierzcholki[(liczba_wierzcholkow_boku * liczba_wierzcholkow_boku) / 2].start_wartosci] = jeden(zesp()) / std::sqrt(2.0);
-		spacer_benchowany.iteracjaA[spacer_benchowany.trwale.wierzcholki[((liczba_wierzcholkow_boku * liczba_wierzcholkow_boku) / 2) + 1].start_wartosci + 2] = jeden(zesp()) / std::sqrt(2.0);
-
+		spacer_benchowany.iteracjaA[spacer_benchowany.trwale.wierzcholki[(liczba_wierzcholkow_boku * liczba_wierzcholkow_boku) / 2].start_wartosci] = zero(zesp());
+		spacer_benchowany.iteracjaA[spacer_benchowany.trwale.wierzcholki[(liczba_wierzcholkow_boku * liczba_wierzcholkow_boku) / 2].start_wartosci] = jeden(zesp()) / sqrt(2.0);
+		spacer_benchowany.iteracjaA[spacer_benchowany.trwale.wierzcholki[(liczba_wierzcholkow_boku * liczba_wierzcholkow_boku) / 2].start_wartosci + 2] = jeden(zesp()) / sqrt(2.0);
 		spacer_benchowany.zapisz_iteracje();
 
 		grafiki_iteracji_cpu.resize(2);
@@ -617,6 +619,7 @@ struct test_czasow_wykonania_kwantowy {
 		for (uint64_t i = 0; i < liczba_iteracji; i++) {
 			spacer_cpu.iteracja_na_cpu();
 			spacer_cpu.dokoncz_iteracje(1.0);
+			// Brakuje absorbcji i normalizacji
 		}
 		CZAS_STOP
 		printf("CPU koniec\n");
@@ -634,7 +637,7 @@ struct test_czasow_wykonania_kwantowy {
 		spacer_gpu.zbuduj_na_cuda();
 		printf("GPU start\n");
 		CZAS_START
-		iteracje_na_gpu<zesp, TMDQ>(spacer_gpu, 1.0, liczba_iteracji, ile_pracy_na_jeden_watek, max_liczba_watkow_w_bloku, -1);
+		iteracje_na_gpu<zesp, TMCQ>(spacer_gpu, dt, liczba_iteracji, ile_pracy_na_jeden_watek, max_liczba_watkow_w_bloku, -1, 1, 1);
 		CZAS_STOP
 		printf("GPU koniec\n");
 		czas_gpu_ys = diff;
@@ -652,7 +655,7 @@ struct test_czasow_wykonania_kwantowy {
 
 		for (uint64_t i = 0; i < spacer_cpu.iteracje_zapamietane.rozmiar; i++) {
 			spacer::dane_iteracji<zesp>& iteracja = *(spacer_cpu.iteracje_zapamietane[i]);
-			grafiki_iteracji_cpu[i] = grafika_P_dla_kraty_2D(spacer_cpu, 
+			grafiki_iteracji_cpu[i] = grafika_P_kierunkow_dla_kraty_2D(spacer_cpu,
 											iteracja, width, height);
 		}
 	}
@@ -664,7 +667,7 @@ struct test_czasow_wykonania_kwantowy {
 
 		for (uint64_t i = 0; i < spacer_gpu.iteracje_zapamietane.rozmiar; i++) {
 			spacer::dane_iteracji<zesp>& iteracja = *(spacer_gpu.iteracje_zapamietane[i]);
-			grafiki_iteracji_gpu[i] = grafika_P_dla_kraty_2D(spacer_gpu,
+			grafiki_iteracji_gpu[i] = grafika_P_kierunkow_dla_kraty_2D(spacer_gpu,
 				iteracja, width, height);
 		}
 	}
@@ -897,8 +900,8 @@ struct test_absorbcji {
 	float skala_obrazu = 1.0f;
 	float wzmocnienie = 1.0f;
 
-	const uint32_t liczba_wierzcholkow_boku = 101;
-	uint32_t liczba_iteracji = 50;
+	const uint32_t liczba_wierzcholkow_boku = 501;
+	uint32_t liczba_iteracji = 100;
 	uint32_t ile_pracy_na_jeden_watek = 30;
 	uint32_t max_liczba_watkow_w_bloku = 300;
 
@@ -935,7 +938,7 @@ struct test_absorbcji {
 
 		// mnoz(std_kierunki_krata, HxH)
 
-		spacer_benchowany.iteracjaA[spacer_benchowany.trwale.wierzcholki[(liczba_wierzcholkow_boku * liczba_wierzcholkow_boku) / 2].start_wartosci] = zero(zesp());
+		//spacer_benchowany.iteracjaA[spacer_benchowany.trwale.wierzcholki[(liczba_wierzcholkow_boku * liczba_wierzcholkow_boku) / 2].start_wartosci] = zero(zesp());
 
 		//spacer_benchowany.iteracjaA[spacer_benchowany.trwale.wierzcholki[((liczba_wierzcholkow_boku * liczba_wierzcholkow_boku) / 2) - (liczba_wierzcholkow_boku * liczba_wierzcholkow_boku) / 10 - liczba_wierzcholkow_boku / 4 + 10].start_wartosci] = 0.5;
 		//spacer_benchowany.iteracjaA[spacer_benchowany.trwale.wierzcholki[((liczba_wierzcholkow_boku * liczba_wierzcholkow_boku) / 2) - (liczba_wierzcholkow_boku * liczba_wierzcholkow_boku) / 10 - liczba_wierzcholkow_boku / 4 + 10 + liczba_wierzcholkow_boku].start_wartosci] = 0.5;
@@ -944,12 +947,15 @@ struct test_absorbcji {
 		//spacer_benchowany.iteracjaA[spacer_benchowany.trwale.wierzcholki[((liczba_wierzcholkow_boku * liczba_wierzcholkow_boku) / 2) + (liczba_wierzcholkow_boku * liczba_wierzcholkow_boku) / 10 - liczba_wierzcholkow_boku / 5 - liczba_wierzcholkow_boku / 4 + 10 + liczba_wierzcholkow_boku].start_wartosci] = 0.5;
 		//spacer_benchowany.iteracjaA[spacer_benchowany.trwale.wierzcholki[(liczba_wierzcholkow_boku * liczba_wierzcholkow_boku) / 2 - liczba_wierzcholkow_boku/2 - 6].start_wartosci] = jeden(zesp()) / std::sqrt(3.0);
 
-		spacer_benchowany.iteracjaA[spacer_benchowany.trwale.wierzcholki[(liczba_wierzcholkow_boku * liczba_wierzcholkow_boku) / 2 - liczba_wierzcholkow_boku - 10 * liczba_wierzcholkow_boku - 10].start_wartosci] = jeden(zesp()) / sqrt(2.0);
+		//spacer_benchowany.iteracjaA[spacer_benchowany.trwale.wierzcholki[(liczba_wierzcholkow_boku * liczba_wierzcholkow_boku) / 2 - liczba_wierzcholkow_boku - 10 * liczba_wierzcholkow_boku - 10].start_wartosci] = jeden(zesp()) / sqrt(2.0);
 		//spacer_benchowany.iteracjaA[spacer_benchowany.trwale.wierzcholki[(liczba_wierzcholkow_boku * liczba_wierzcholkow_boku) / 2 - 10 * liczba_wierzcholkow_boku - 10].start_wartosci] = jeden(zesp()) / 2.0;
 
-		spacer_benchowany.iteracjaA[spacer_benchowany.trwale.wierzcholki[(liczba_wierzcholkow_boku * liczba_wierzcholkow_boku) / 2 - liczba_wierzcholkow_boku - 10 * liczba_wierzcholkow_boku - 10].start_wartosci + 2] = jeden(zesp()) / sqrt(2.0);
+		//spacer_benchowany.iteracjaA[spacer_benchowany.trwale.wierzcholki[(liczba_wierzcholkow_boku * liczba_wierzcholkow_boku) / 2 - liczba_wierzcholkow_boku - 10 * liczba_wierzcholkow_boku - 10].start_wartosci + 2] = jeden(zesp()) / sqrt(2.0);
 		//spacer_benchowany.iteracjaA[spacer_benchowany.trwale.wierzcholki[(liczba_wierzcholkow_boku * liczba_wierzcholkow_boku) / 2 - 10 * liczba_wierzcholkow_boku - 10].start_wartosci + 2] = jeden(zesp()) / 2.0;
-
+		
+		spacer_benchowany.iteracjaA[spacer_benchowany.trwale.wierzcholki[(liczba_wierzcholkow_boku * liczba_wierzcholkow_boku) / 2].start_wartosci] = zero(zesp());
+		spacer_benchowany.iteracjaA[spacer_benchowany.trwale.wierzcholki[(liczba_wierzcholkow_boku * liczba_wierzcholkow_boku) / 2].start_wartosci] = jeden(zesp()) / sqrt(2.0);
+		spacer_benchowany.iteracjaA[spacer_benchowany.trwale.wierzcholki[(liczba_wierzcholkow_boku * liczba_wierzcholkow_boku) / 2].start_wartosci + 2] = jeden(zesp()) / sqrt(2.0);
 		spacer_benchowany.zapisz_iteracje();
 
 		pozycje.resize(liczba_wierzcholkow_boku);
@@ -982,8 +988,7 @@ struct test_absorbcji {
 		CZAS_INIT
 			printf("CPU start\n");
 		CZAS_START
-			uint64_t co_ile_zapisac_iterator = 0;
-			for (uint64_t i = 0; i < liczba_iteracji; i++, co_ile_zapisac_iterator++) {
+			for (uint64_t i = 0; i < liczba_iteracji; i++) {
 				spacer_cpu.iteracja_na_cpu();
 				if(i % co_ile_absorbuj == 0){
 					spacer_cpu.absorbuj_na_cpu(1.0);
@@ -995,9 +1000,8 @@ struct test_absorbcji {
 				} else {
 					spacer_cpu.nie_normalizuj();
 				}
-				if(co_ile_zapisac_iterator >= co_ile_zapisac){// nie jest znaczaco szybsze
+				if(i % co_ile_zapisac == 0){// modulo nie jest znaczaco wolne
 					spacer_cpu.zapisz_iteracje();
-					co_ile_zapisac_iterator = 0;
 				}
 				spacer_cpu.dokoncz_iteracje(dt);
 			}

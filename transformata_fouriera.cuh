@@ -21,9 +21,9 @@ struct fft_3d_po_jednym {
     __host__ fft_3d_po_jednym(int szerokosc, int wysokosc, int glebokosc)
         : dims({ szerokosc, wysokosc, glebokosc }) { // moze kolejnosc jest zla
         cufftPlan3d(&plan, dims[0], dims[1], dims[2], CUFFT_Z2Z);
-        checkCudaErrors(cudaStreamCreateWithFlags(&stream, cudaStreamNonBlocking));
+        sprawdzCudaErrors(cudaStreamCreateWithFlags(&stream, cudaStreamNonBlocking));
         cufftSetStream(plan, stream);
-        checkCudaErrors(cudaMalloc(reinterpret_cast<void**>(&cache), sizeof(zesp) * rozmiar()));
+        sprawdzCudaErrors(cudaMalloc(reinterpret_cast<void**>(&cache), sizeof(zesp) * rozmiar()));
     }
 
     __host__ void fft(statyczny_wektor<zesp>& dane) {
@@ -31,7 +31,7 @@ struct fft_3d_po_jednym {
         cufftExecZ2Z(plan, (cufftDoubleComplex*)cache, (cufftDoubleComplex*)cache, CUFFT_FORWARD);
         skaluj(stream, (cufftDoubleComplex*)cache, rozmiar(), std::sqrt(1.0 / rozmiar()));
         dane.cuda_przynies_z(stream, cache);
-        checkCudaErrors(cudaStreamSynchronize(stream));
+        sprawdzCudaErrors(cudaStreamSynchronize(stream));
     }
 
     __host__ void fft_inv(statyczny_wektor<zesp>& dane) {
@@ -39,7 +39,7 @@ struct fft_3d_po_jednym {
         skaluj(stream, (cufftDoubleComplex*)cache, rozmiar(), std::sqrt(1.0 / rozmiar()));
         cufftExecZ2Z(plan, (cufftDoubleComplex*)cache, (cufftDoubleComplex*)cache, CUFFT_INVERSE);
         dane.cuda_przynies_z(stream, cache);
-        checkCudaErrors(cudaStreamSynchronize(stream));
+        sprawdzCudaErrors(cudaStreamSynchronize(stream));
     }
 
     __host__ inline int rozmiar() {
@@ -47,10 +47,10 @@ struct fft_3d_po_jednym {
     }
 
     __host__ ~fft_3d_po_jednym() {
-        checkCudaErrors(cudaFree(cache));
+        sprawdzCudaErrors(cudaFree(cache));
         cufftDestroy(plan);
-        checkCudaErrors(cudaStreamDestroy(stream));
-        //checkCudaErrors(cudaDeviceReset()); ?
+        sprawdzCudaErrors(cudaStreamDestroy(stream));
+        //sprawdzCudaErrors(cudaDeviceReset()); ?
     }
 
 };

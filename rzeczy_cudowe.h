@@ -37,11 +37,17 @@
 #define IF_HOST(X) X
 #endif
 
+#ifdef _DEBUG
+	#define sprawdzCudaErrors(val) {auto chwilowe = val; if(chwilowe){__debugbreak();} check((chwilowe), #val, __FILE__, __LINE__);}
+#else
+	#define sprawdzCudaErrors(val) check((val), #val, __FILE__, __LINE__);
+#endif
+
 #define if_HD_printf(wiadomosc_host, wiadomosc_cuda) IF_HD(printf(wiadomosc_cuda), printf(wiadomosc_host))
 
 #define przenies_na_cuda(cel, zrodlo) \
-checkCudaErrors(cudaMalloc(reinterpret_cast<void**>(&cel), zrodlo.bajt_rozmiar())); \
-checkCudaErrors(cudaMemcpyAsync(reinterpret_cast<void*>(&cel), reinterpret_cast<void*>(&zrodlo), zrodlo.bajt_rozmiar(), cudaMemcpyHostToDevice, stream));
+sprawdzCudaErrors(cudaMalloc(reinterpret_cast<void**>(&cel), zrodlo.bajt_rozmiar())); \
+sprawdzCudaErrors(cudaMemcpyAsync(reinterpret_cast<void*>(&cel), reinterpret_cast<void*>(&zrodlo), zrodlo.bajt_rozmiar(), cudaMemcpyHostToDevice, stream));
 
 template <typename T>
 struct zmienna_miedzy_HD{
@@ -53,7 +59,7 @@ struct zmienna_miedzy_HD{
 */
 	__host__ zmienna_miedzy_HD(){
 		lokalizacja_na_cpu = (T*)malloc(sizeof(T)); // nie inicjalizuje
-		checkCudaErrors(cudaMalloc(reinterpret_cast<void**>(lokalizacja_na_cudzie), sizeof(T)));
+		sprawdzCudaErrors(cudaMalloc(reinterpret_cast<void**>(lokalizacja_na_cudzie), sizeof(T)));
 	}
 		
 	__host__ T* adres_cuda(){
@@ -66,7 +72,7 @@ struct zmienna_miedzy_HD{
 
 	__host__ ~zmienna_miedzy_HD(){
 		free(lokalizacja_na_cpu);
-		checkCudaErrors(cudaFree(lokalizacja_na_cudzie));
+		sprawdzCudaErrors(cudaFree(lokalizacja_na_cudzie));
 	}
 	
 };

@@ -177,7 +177,7 @@ graf graf_krata_2D_cykl(uint32_t liczba_wierzcholkow_boku, bool z_nazwami) {
 	}
 
 	for (uint32_t i = 0; i < liczba_wierzcholkow_boku; i++) {
-		G.dodaj_krawedz_nieskier(i, liczba_wierzcholkow_boku * (liczba_wierzcholkow_boku - 1) + i);
+		G.dodaj_krawedz_nieskier(i, 2, liczba_wierzcholkow_boku * (liczba_wierzcholkow_boku - 1) + i, 3);
 	}
 
 	for (uint32_t i = 0; i < liczba_wierzcholkow_boku; i++) {
