@@ -61,6 +61,11 @@ struct zesp {
         this->Im += a.Im;
     }
 
+    __HD__ void operator-=(zesp const a) {
+        this->Re -= a.Re;
+        this->Im -= a.Im;
+    }
+
     __HD__ double abs() const {
         return std::sqrt(Re * Re + Im * Im);
     }

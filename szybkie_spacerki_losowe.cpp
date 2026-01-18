@@ -56,14 +56,15 @@ int main(int argc, char** argv)
     //test_spaceru_kwantowy_ciagly TSQC;
     //test_czasow_wykonania_kwantowy TCWQ;
     //test_sciezki_spaceru_kwantowy_dyskretny TSSKD;
-    test_absorbcji TA;
+    //test_absorbcji TA;
 
     //test_funkcji_tworzacych_grafy();
     //test_ortonormalizacji();
 
     //przejrzenie_przestrzeni_opertatorow_mozliwych_tensorowo();
     //przejrzenie_stanow_poczatkowych();
-    //przejrzenie_reczne<TMCQ> przegladacz("losowe_transformaty_z_kola");
+    //"tensorowe_transformaty_bezfazy"
+    przejrzenie_reczne<TMCQ> przegladacz("losowe_transformaty_z_kola");
 
     while (!glfwWindowShouldClose(window))
     {
@@ -90,8 +91,8 @@ int main(int argc, char** argv)
         //TSQC.pokaz_okno(*io);
         //TCWQ.pokaz_okno(*io);
         //TSSKD.pokaz_okno(*io);
-        TA.pokaz_okno(*io);
-        //przegladacz.pokaz_okno();
+        //TA.pokaz_okno(*io);
+        przegladacz.pokaz_okno();
 
         //processInput(window); // z grafiki
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // czesciowo z grafiki

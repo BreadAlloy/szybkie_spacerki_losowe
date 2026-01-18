@@ -4,44 +4,7 @@
 
 //#include <cooperative_groups.h> nie mam compute compatibility 9.0 :( cluster.sync()
 
-__HD__ __forceinline__ double dot(const estetyczny_wektor<double>& a, const estetyczny_wektor<double>& b) {
-	ASSERT_Z_ERROR_MSG(a.rozmiar == b.rozmiar, "Dot product na innej ilosci elementow\n");
-	double sum = 0.0;
-	for (uint64_t i = 0; i < a.rozmiar; i++) {
-		sum += (a[i] * b[i]);
-	}
-	return sum;
-}
-
-__HD__ __forceinline__ zesp dot(const estetyczny_wektor<zesp>& a, const estetyczny_wektor<zesp>& b) {
-	ASSERT_Z_ERROR_MSG(a.rozmiar == b.rozmiar, "Dot product na innej ilosci elementow\n");
-	zesp sum = zesp(0.0, 0.0);
-	for (uint64_t i = 0; i < a.rozmiar; i++) {
-		sum += (a[i].sprzezenie() * b[i]);
-	}
-	return sum;
-}
-
-struct przydzielacz_prac{
-	uint64_t ile_prac = 0;
-	uint64_t ile_watkow = 0;
-	uint64_t ile_blokow = 0;
-	uint64_t ile_prac_sumarycznie = 0;
-
-	przydzielacz_prac(uint64_t ile_prac_sumarycznie, uint64_t ile_prac_na_watek, uint64_t max_ile_watkow) : 
-		ile_prac_sumarycznie(ile_prac_sumarycznie), ile_prac(ile_prac_na_watek){
-		uint64_t ile_watkow_sumarycznie = ile_prac_sumarycznie / ile_prac_na_watek + 1;
-		ile_blokow = ile_watkow_sumarycznie / max_ile_watkow + 1;
-		ile_watkow = ile_watkow_sumarycznie / ile_blokow + 1;
-	}
-
-	__device__ __forceinline__ uint64_t index_pracownika(uint64_t index_pracy, uint64_t index_watka, uint64_t index_bloku){
-		return ile_watkow * (ile_prac * index_bloku + index_pracy) + index_watka;
-		//return ile_prac * (ile_watkow * index_bloku + index_watka) + index_pracy; // o wiele gorsze
-	}
-};
-
-#define start_kernel(przydzielacz, rozmiar_pamieci_dzielonej, stream) <<<(uint32_t)przydzielacz.ile_blokow, (uint32_t)przydzielacz.ile_watkow, rozmiar_pamieci_dzielonej, stream>>>
+#include "wspolne.cuh"
 
 // na wiele blokow
 template<typename towar>
@@ -163,8 +126,9 @@ __global__ void iteracja_na_gpu(spacer::dane_trwale<transformata>* trwale, space
 		spacer::info_pracownika IP = trwale->znajdz_wierzcholek(index_pracownika);
 
 		spacer::wierzcholek& wierzcholek = trwale->wierzcholki[IP.index_wierzcholka];
+		transformata& transformer = trwale->transformaty[wierzcholek.transformer];
 
-		trwale->transformaty[wierzcholek.transformer].transformuj(*trwale, wierzcholek, *iteracja_z, *iteracja_do, IP.index_w_wierzcholku, IP.index_wierzcholka);
+		transformer.transformuj(*trwale, wierzcholek, *iteracja_z, *iteracja_do, IP.index_w_wierzcholku, IP.index_wierzcholka);
 	}
 }
 

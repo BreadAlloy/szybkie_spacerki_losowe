@@ -49,30 +49,23 @@
 sprawdzCudaErrors(cudaMalloc(reinterpret_cast<void**>(&cel), zrodlo.bajt_rozmiar())); \
 sprawdzCudaErrors(cudaMemcpyAsync(reinterpret_cast<void*>(&cel), reinterpret_cast<void*>(&zrodlo), zrodlo.bajt_rozmiar(), cudaMemcpyHostToDevice, stream));
 
-template <typename T>
-struct zmienna_miedzy_HD{
-	T* lokalizacja_na_cudzie = nullptr;
-	T* lokalizacja_na_cpu = nullptr;
-/*
-	(cuda&) = lokalizacja na gpu
-	(host&) = lokalizacja na cpu
-*/
-	__host__ zmienna_miedzy_HD(){
-		lokalizacja_na_cpu = (T*)malloc(sizeof(T)); // nie inicjalizuje
-		sprawdzCudaErrors(cudaMalloc(reinterpret_cast<void**>(lokalizacja_na_cudzie), sizeof(T)));
-	}
-		
-	__host__ T* adres_cuda(){
-		return lokalizacja_na_cudzie;
+struct przydzielacz_prac {
+	uint64_t ile_prac = 0;
+	uint64_t ile_watkow = 0;
+	uint64_t ile_blokow = 0;
+	uint64_t ile_prac_sumarycznie = 0;
+
+	__host__ przydzielacz_prac(uint64_t ile_prac_sumarycznie, uint64_t ile_prac_na_watek, uint64_t max_ile_watkow) :
+		ile_prac_sumarycznie(ile_prac_sumarycznie), ile_prac(ile_prac_na_watek) {
+		uint64_t ile_watkow_sumarycznie = ile_prac_sumarycznie / ile_prac_na_watek + 1;
+		ile_blokow = ile_watkow_sumarycznie / max_ile_watkow + 1;
+		ile_watkow = ile_watkow_sumarycznie / ile_blokow + 1;
 	}
 
-	__host__ T* adres_host(){
-		return lokalizacja_na_cpu;
+	__device__ __forceinline__ uint64_t index_pracownika(uint64_t index_pracy, uint64_t index_watka, uint64_t index_bloku) {
+		return ile_watkow * (ile_prac * index_bloku + index_pracy) + index_watka;
+		//return ile_prac * (ile_watkow * index_bloku + index_watka) + index_pracy; // o wiele gorsze
 	}
-
-	__host__ ~zmienna_miedzy_HD(){
-		free(lokalizacja_na_cpu);
-		sprawdzCudaErrors(cudaFree(lokalizacja_na_cudzie));
-	}
-	
 };
+
+#define start_kernel(przydzielacz, rozmiar_pamieci_dzielonej, stream) <<<(uint32_t)przydzielacz.ile_blokow, (uint32_t)przydzielacz.ile_watkow, rozmiar_pamieci_dzielonej, stream>>>

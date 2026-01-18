@@ -57,20 +57,22 @@ struct transformata_macierz_ciagla_kwantowa : transformata_macierz<zesp> {
 	}
 
 	__HD__ void transformuj(spacer::dane_trwale<TMCQ>& trwale, const spacer::wierzcholek& wierzcholek,
-		spacer::dane_iteracji<zesp>& iteracja_z, spacer::dane_iteracji<zesp>& iteracja_do, uint64_t index_w_wierzcholku, uint64_t index_wierzcholka)
+		spacer::dane_iteracji<zesp>& iteracja_z, spacer::dane_iteracji<zesp>& iteracja_do, uint64_t index_w_wierzcholku, uint64_t)
 	{
-		//double dP = 0.0;		
+		estetyczny_wektor<zesp> a(&(iteracja_z[wierzcholek.start_wartosci]), wierzcholek.liczba_kierunkow);
+		estetyczny_wektor<zesp> b(&(operator()((uint8_t)index_w_wierzcholku, 0)), arrnosc);
+		uint64_t offset_do = (uint64_t)trwale.gdzie_wyslac[wierzcholek.start_wartosci + index_w_wierzcholku];
+		zesp PSI = (iteracja_z[offset_do] + schrodinger * dot(b, a)) * iteracja_z.norma_poprzedniej_iteracji;
+		iteracja_do[offset_do] = PSI;
+	}
 
-		TMCQ& transformata = trwale.transformaty[wierzcholek.transformer];
-		//for(uint64_t i = 0; i < wierzcholek.liczba_kierunkow; i++){
-			estetyczny_wektor<zesp> a(&(iteracja_z[wierzcholek.start_wartosci]), wierzcholek.liczba_kierunkow);
-			estetyczny_wektor<zesp> b(&(transformata((uint8_t)index_w_wierzcholku, 0)), transformata.arrnosc);
-			uint64_t offset_do = (uint64_t)trwale.gdzie_wyslac[wierzcholek.start_wartosci + index_w_wierzcholku];
-			zesp PSI = (iteracja_z[offset_do] + schrodinger * dot(b, a)) * iteracja_z.norma_poprzedniej_iteracji;
-			//dP += (P(PSI) - P(iteracja_z[offset_do]));
-			iteracja_do[offset_do] = PSI;
-		//}
-		//iteracja_do.wspolczynniki_normalizacji[index_wierzcholka] = dP;
+	__HD__ void transformuj_rozniczka(spacer::dane_trwale<TMCQ>* trwale, const spacer::wierzcholek& wierzcholek,
+		zesp* zrodlo, zesp* zwrot, uint64_t index_w_wierzcholku, uint64_t)
+	{
+		estetyczny_wektor<zesp> a(&(zrodlo[wierzcholek.start_wartosci]), wierzcholek.liczba_kierunkow);
+		estetyczny_wektor<zesp> b(&(operator()((uint8_t)index_w_wierzcholku, 0)), arrnosc);
+		uint64_t offset_do = (uint64_t)trwale->gdzie_wyslac[wierzcholek.start_wartosci + index_w_wierzcholku];
+		zwrot[offset_do] = dot(b, a);
 	}
 };
 

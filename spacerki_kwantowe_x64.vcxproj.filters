@@ -249,6 +249,8 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="transformata_fouriera.cuh" />
+    <ClInclude Include="rozniczka.cuh" />
+    <ClInclude Include="wspolne.cuh" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="szybki_kalkulator.cu" />
@@ -256,5 +258,6 @@
     <CudaCompile Include="transformaty.cu" />
     <CudaCompile Include="zesp.cu" />
     <CudaCompile Include="transformata_fouriera.cu" />
+    <CudaCompile Include="rozniczka.cu" />
   </ItemGroup>
 </Project>

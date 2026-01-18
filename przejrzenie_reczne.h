@@ -6,13 +6,14 @@
 #include "zapamietywacz.h"
 
 #include "transformata_fouriera.cuh"
+#include "rozniczka.cuh"
 
 template <typename transformata> // nie obs³uguje klasycznych
 struct okno_przegladania{
 	const uint32_t liczba_wierzcholkow_boku;
 	const std::string nazwa_okna;
 
-	int co_ile_zapisz = 1;
+	int co_ile_zapisz = 100;
 	int liczba_iteracji = 0;
 	int pokazywana_grafika = 0;
 	float skala_obrazu = 1.0f;
@@ -89,6 +90,48 @@ struct okno_przegladania{
 		}
 	}
 
+	void rozniczkuj_po_przstrzeni(){
+		spacer.zbuduj_na_cuda();
+		rozniczka_po_przestrzeni rozniczkowacz(&(spacer.trwale));
+		for (uint64_t i = 0; i < spacer.iteracje_zapamietane.rozmiar; i++) {
+			statyczny_wektor<zesp>& dane = spacer.iteracje_zapamietane[i]->wartosci;
+			dane.cuda_malloc();
+			dane.cuda_zanies(rozniczkowacz.stream);
+			rozniczkowacz.rozniczkuj(&(spacer.lokalizacja_na_device->trwale), spacer.iteracje_zapamietane[i]->wartosci);
+			dane.cuda_przynies(rozniczkowacz.stream);
+			dane.cuda_free();
+		}
+		spacer.zburz_na_cuda();
+	}
+
+	void rozniczkuj_po_czasie() {
+		spacer.zbuduj_na_cuda();
+		rozniczka_po_czasie rozniczkowacz(&(spacer.trwale));
+		for (uint64_t i = 0; i < spacer.iteracje_zapamietane.rozmiar; i++) {
+			statyczny_wektor<zesp>& dane = spacer.iteracje_zapamietane[i]->wartosci;
+			dane.cuda_malloc();
+			dane.cuda_zanies(rozniczkowacz.stream);
+			rozniczkowacz.rozniczkuj(&(spacer.lokalizacja_na_device->trwale), spacer.iteracje_zapamietane[i]->wartosci);
+			dane.cuda_przynies(rozniczkowacz.stream);
+			dane.cuda_free();
+		}
+		spacer.zburz_na_cuda();
+	}
+
+	void laplasuj_po_przstrzeni() {
+		spacer.zbuduj_na_cuda();
+		laplasjan_po_przestrzeni laplasowacz(&(spacer.trwale));
+		for (uint64_t i = 0; i < spacer.iteracje_zapamietane.rozmiar; i++) {
+			statyczny_wektor<zesp>& dane = spacer.iteracje_zapamietane[i]->wartosci;
+			dane.cuda_malloc();
+			dane.cuda_zanies(laplasowacz.stream);
+			laplasowacz.laplasuj(&(spacer.lokalizacja_na_device->trwale), spacer.iteracje_zapamietane[i]->wartosci);
+			dane.cuda_przynies(laplasowacz.stream);
+			dane.cuda_free();
+		}
+		spacer.zburz_na_cuda();
+	}
+
 	bool pokaz_okno(){
 		bool ret = true;
 		ImGui::Begin(nazwa_okna.c_str(), &ret);
@@ -108,6 +151,21 @@ struct okno_przegladania{
 		ImGui::SameLine();
 		if(ImGui::Checkbox("Pedowo", &pedowo)){
 			fourieruj(!pedowo);
+			przygotuj_grafiki();
+		}
+		ImGui::SameLine();
+		if (ImGui::Button("Rozniczkuj po przestrzeni")) {
+			rozniczkuj_po_przstrzeni();
+			przygotuj_grafiki();
+		}
+		ImGui::SameLine();
+		if (ImGui::Button("Laplasuj po przestrzeni")) {
+			laplasuj_po_przstrzeni();
+			przygotuj_grafiki();
+		}
+		ImGui::SameLine();
+		if (ImGui::Button("Rozniczkuj po czasie")) {
+			rozniczkuj_po_czasie();
 			przygotuj_grafiki();
 		}
 

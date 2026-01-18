@@ -39,6 +39,7 @@
     <ClInclude Include="losowe.h" />
     <ClInclude Include="pomocne_funkcje.h" />
     <ClInclude Include="przejrzenie_reczne.h" />
+    <ClInclude Include="rozniczka.cuh" />
     <ClInclude Include="rzeczy_cudowe.h" />
     <ClInclude Include="spacer_2D_wizualizacja.h" />
     <ClInclude Include="spacer_losowy.h" />
@@ -58,6 +59,7 @@
     <ClInclude Include="transformaty.h" />
     <ClInclude Include="transformaty_wyspecializowane.h" />
     <ClInclude Include="wektory.h" />
+    <ClInclude Include="wspolne.cuh" />
     <ClInclude Include="zadanie.h" />
     <ClInclude Include="zapamietywacz.h" />
     <ClInclude Include="zesp.h" />
@@ -122,6 +124,7 @@
     <ClCompile Include="zesp.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <CudaCompile Include="rozniczka.cu" />
     <CudaCompile Include="spacer_losowy.cu" />
     <CudaCompile Include="szybki_kalkulator.cu" />
     <CudaCompile Include="transformata_fouriera.cu" />
