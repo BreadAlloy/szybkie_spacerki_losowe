@@ -8,6 +8,94 @@
 #include "transformata_fouriera.cuh"
 #include "rozniczka.cuh"
 
+struct czy_czasteczka_okno{
+	const uint32_t liczba_wierzcholkow_boku;
+	const std::string nazwa_okna;
+
+	czy_jest_czastka dane;
+	
+	std::vector<grafika*> grafiki_iteracji;
+	std::vector<std::vector<grafika*>> grafiki_iteracji_kierunki;
+
+	std::vector<double> normy_skalarow;
+	std::vector<double> estymowana_masa;
+	std::vector<double> prawdopodop;
+	std::vector<double> czasy;
+
+	spacer_losowy<zesp, TMCQ>* spacer;
+	graf* przestrzen_ptr;
+
+	int pokazywana_grafika = 0;
+	float skala_obrazu = 1.0f;
+	float wzmocnienie = 1.0f;
+	float okres_pokazu_slajdow = 1.0f;
+	double ostatni_czas_odswiezenia = glfwGetTime();
+
+	czy_czasteczka_okno(spacer_losowy<zesp, TMCQ>* spacer, std::string nazwa_okna, uint32_t liczba_wierzcholkow_boku, graf* przestrzen_ptr)
+	: dane(*spacer), nazwa_okna(nazwa_okna), spacer(spacer), liczba_wierzcholkow_boku(liczba_wierzcholkow_boku), przestrzen_ptr(przestrzen_ptr){
+		przygotuj_grafiki();
+	}
+
+	void przygotuj_grafiki(){
+		for (auto& g : grafiki_iteracji) {
+			delete g;
+		}
+
+		estymowana_masa.resize(dane.dla_iteracji.size());
+		normy_skalarow.resize(dane.dla_iteracji.size());
+		grafiki_iteracji.resize(dane.dla_iteracji.size());
+		czasy.resize(dane.dla_iteracji.size());
+		prawdopodop.resize(dane.dla_iteracji.size());
+
+		for (uint64_t i = 0; i < dane.dla_iteracji.size(); i++) {
+			statyczny_wektor<zesp>& blad = dane.dla_iteracji[i].blad;
+			spacer::dane_iteracji<zesp>& iteracja = *(spacer->iteracje_zapamietane[i]);
+			czasy[i] = iteracja.czas;
+			grafiki_iteracji[i] = grafika_P_kierunkow_dla_kraty_2D(*spacer,
+				blad, liczba_wierzcholkow_boku, liczba_wierzcholkow_boku, &(prawdopodop[i]), 1.0f);
+			normy_skalarow[i] = dane.dla_iteracji[i].x.norm();
+			estymowana_masa[i] = 1.0 / normy_skalarow[i];
+		}
+	}
+
+	bool pokaz_okno(){
+		bool ret = true;
+		ImGui::Begin(nazwa_okna.c_str(), &ret);
+		ImGui::SliderFloat("Rozmiar grafiki", &skala_obrazu, 0.0f, 10.0f);
+		ImGui::SliderFloat("Wzmocnienie", &wzmocnienie, 1.0f, 10.0f);
+		ImGui::SliderFloat("Okres pokazu slajdow(1.0 to brak pokazu)", &okres_pokazu_slajdow, -0.01f, 1.0f);
+
+		if (okres_pokazu_slajdow < 0.95f) {
+			double czas = glfwGetTime();
+			if (czas > (ostatni_czas_odswiezenia + (double)okres_pokazu_slajdow)) {
+				ostatni_czas_odswiezenia = czas;
+				pokazywana_grafika = (pokazywana_grafika + 1) % grafiki_iteracji.size();
+			}
+		}
+		else {
+			ostatni_czas_odswiezenia = glfwGetTime();
+		}
+
+		if (grafiki_iteracji.size() != 0) {
+			ImGui::SliderInt("Pokazywana grafika", &pokazywana_grafika, 0, grafiki_iteracji.size() - 1UL);
+			grafika* G = grafiki_iteracji[pokazywana_grafika];
+			plot_spacer_dla_kraty_2D(*spacer, dane.dla_iteracji[pokazywana_grafika].blad, *przestrzen_ptr, G, liczba_wierzcholkow_boku, liczba_wierzcholkow_boku, skala_obrazu, "Blad rozwiazania rownania rozniczkowego");
+			ImGui::SameLine();
+			if (ImPlot::BeginPlot("##Blad", ImVec2(skala_obrazu * 200.0f, skala_obrazu * 200.0f))) {
+				ImPlot::PlotInfLines("Biezacy czas", &czasy[pokazywana_grafika], 1);
+				ImPlot::PlotLine("Blad calkowity", czasy.data(), prawdopodop.data(), (int)czasy.size());
+				ImPlot::PlotLine("Norma skalaru", czasy.data(), normy_skalarow.data(), (int)czasy.size());
+				ImPlot::PlotLine("Estymowana masa", czasy.data(), estymowana_masa.data(), (int)czasy.size());
+				ImPlot::PlotLineLepsze("Skalar(Re)", czasy.data(), &(dane.dla_iteracji.data()->x.Re), (int)czasy.size(), 0, 0, sizeof(podobienstwo_liniowe));
+				ImPlot::PlotLineLepsze("Skalar(Im)", czasy.data(), &(dane.dla_iteracji.data()->x.Im), (int)czasy.size(), 0, 0, sizeof(podobienstwo_liniowe));
+				ImPlot::EndPlot();
+			}
+		}
+		ImGui::End();
+		return ret;
+	}
+};
+
 template <typename transformata> // nie obs³uguje klasycznych
 struct okno_przegladania{
 	const uint32_t liczba_wierzcholkow_boku;
@@ -25,6 +113,7 @@ struct okno_przegladania{
 	graf* przestrzen_ptr = nullptr;
 	spacer_losowy<zesp, transformata> poczatkowy;
 	spacer_losowy<zesp, transformata> spacer;
+	czy_czasteczka_okno* czy_czastka = nullptr;
 
 	std::vector<grafika*> grafiki_iteracji;
 	std::vector<std::vector<grafika*>> grafiki_iteracji_kierunki;
@@ -77,6 +166,13 @@ struct okno_przegladania{
 		spacer.zburz_na_cuda();
 
 		przygotuj_grafiki();
+	}
+
+	void policz_czy_czastka(){
+		if(czy_czastka != nullptr){
+			delete czy_czastka;
+		}
+		czy_czastka = new czy_czasteczka_okno(&spacer, nazwa_okna + ": czy czastka", liczba_wierzcholkow_boku, przestrzen_ptr);
 	}
 
 	void fourieruj(bool odwrocona){
@@ -168,6 +264,10 @@ struct okno_przegladania{
 			rozniczkuj_po_czasie();
 			przygotuj_grafiki();
 		}
+		ImGui::SameLine();
+		if (ImGui::Button("Czy jest czasteczka")) {
+			policz_czy_czastka();
+		}
 
 		if (okres_pokazu_slajdow < 0.95f) {
 			double czas = glfwGetTime();
@@ -182,15 +282,14 @@ struct okno_przegladania{
 
 		if(grafiki_iteracji.size() != 0){
 			ImGui::SliderInt("Pokazywana grafika", &pokazywana_grafika, 0, grafiki_iteracji.size() - 1UL);
-
-			grafika* G = grafiki_iteracji[pokazywana_grafika];
-			plot_spacer_dla_kraty_2D(spacer, pokazywana_grafika, *przestrzen_ptr, G, liczba_wierzcholkow_boku, liczba_wierzcholkow_boku, skala_obrazu, "spacer");
-
 			ImGui::Text("Spacer: Prawdopodobienstwo poprzedniej:%lf, Zaabsorbowane poprzedniej: %lf, Norma poprzedniej: %lf",
 				spacer.iteracje_zapamietane[pokazywana_grafika]->prawdopodobienstwo_poprzedniej,
 				spacer.iteracje_zapamietane[pokazywana_grafika]->zaabsorbowane_poprzedniej,
 				spacer.iteracje_zapamietane[pokazywana_grafika]->norma_poprzedniej_iteracji
 			);
+			grafika* G = grafiki_iteracji[pokazywana_grafika];
+			plot_spacer_dla_kraty_2D(spacer, pokazywana_grafika, *przestrzen_ptr, G, liczba_wierzcholkow_boku, liczba_wierzcholkow_boku, skala_obrazu, "spacer");
+			ImGui::SameLine();
 			if (ImPlot::BeginPlot("##Dane w spacerze", ImVec2(skala_obrazu * 200.0f, skala_obrazu * 200.0f))) {
 				ImPlot::PlotInfLines("Vertical pomocnik cpu", &czasy[pokazywana_grafika], 1);
 
@@ -199,7 +298,20 @@ struct okno_przegladania{
 			}
 		}
 		ImGui::End();
+		if(czy_czastka != nullptr){
+			if(!czy_czastka->pokaz_okno()){
+				delete czy_czastka;
+				czy_czastka = nullptr;
+			}
+		}
 		return ret;
+	}
+
+	~okno_przegladania(){
+		if(czy_czastka != nullptr){
+			delete czy_czastka;
+			czy_czastka = nullptr;
+		}
 	}
 
 };
@@ -255,7 +367,7 @@ struct preview_zapisanych{
 template <typename transformata> // nie obs³uguje klasycznych
 struct przejrzenie_reczne{
 	// pola ustawiane przy kompilacji
-	const uint32_t liczba_wierzcholkow_boku = 501;
+	const uint32_t liczba_wierzcholkow_boku = 201;
 	const uint32_t liczba_podgrafik = 5;
 
 	const std::string nazwa_okna;

@@ -82,6 +82,7 @@
     <ClCompile Include="implot\implot_items.cpp" />
     <ClCompile Include="losowe.cpp" />
     <ClCompile Include="pomocne_funkcje.cpp" />
+    <ClCompile Include="rozniczka.cpp" />
     <ClCompile Include="spacer_losowy.cpp" />
     <ClCompile Include="szybkie_spacerki_losowe.cpp" />
     <ClCompile Include="src\Box.cpp">

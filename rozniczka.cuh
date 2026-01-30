@@ -93,6 +93,55 @@ struct laplasjan_po_przestrzeni {
 	}
 };
 
+struct podobienstwo_liniowe
+{
+	statyczny_wektor<zesp> blad;
+	zesp x = zesp(0.0, 0.0);
+
+	podobienstwo_liniowe(uint64_t rozmiar)
+	: blad(rozmiar)
+	{}
+};
+
+__host__ podobienstwo_liniowe dopasuj_liniowo(statyczny_wektor<zesp>& A, statyczny_wektor<zesp>& B);
+__host__ podobienstwo_liniowe dopasuj_liniowo_norma(statyczny_wektor<zesp>& A, statyczny_wektor<zesp>& B);
+
+struct czy_jest_czastka{
+	std::vector<podobienstwo_liniowe> dla_iteracji;
+
+	czy_jest_czastka(spacer_losowy<zesp, TMCQ>& spacer){
+		laplasjan_po_przestrzeni laplasowacz(&spacer.trwale);
+		rozniczka_po_czasie rozniczkowacz(&spacer.trwale);
+
+		statyczny_wektor<zesp> laplasowany(spacer.trwale.liczba_kubelkow());
+		laplasowany.cuda_malloc();
+
+		statyczny_wektor<zesp> rozniczkowany(spacer.trwale.liczba_kubelkow());
+		rozniczkowany.cuda_malloc();
+
+		spacer.zbuduj_na_cuda();
+
+		for(uint64_t i = 0; i < spacer.iteracje_zapamietane.rozmiar; i++){
+			laplasowany = spacer.iteracje_zapamietane[i]->wartosci;
+			laplasowany.cuda_zanies(laplasowacz.stream);
+
+			rozniczkowany = spacer.iteracje_zapamietane[i]->wartosci;
+			rozniczkowany.cuda_zanies(rozniczkowacz.stream);
+
+			laplasowacz.laplasuj(&(spacer.lokalizacja_na_device->trwale), laplasowany);
+			rozniczkowacz.rozniczkuj(&(spacer.lokalizacja_na_device->trwale), rozniczkowany);
+
+			laplasowany.cuda_przynies(laplasowacz.stream);
+			rozniczkowany.cuda_przynies(rozniczkowacz.stream);
+
+			checkCudaErrors(cudaStreamSynchronize(laplasowacz.stream));
+			checkCudaErrors(cudaStreamSynchronize(rozniczkowacz.stream));
+
+			dla_iteracji.push_back(dopasuj_liniowo_norma(laplasowany, rozniczkowany));
+		}
+		spacer.zburz_na_cuda();
+	}
+};
 
 
 

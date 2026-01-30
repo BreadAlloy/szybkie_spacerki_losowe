@@ -147,7 +147,13 @@ template <typename towar, typename transformata>
 __host__ std::vector<grafika*> grafiki_P_kierunkow_dla_kraty_2D(spacer_losowy<towar, transformata>& spacer, spacer::dane_iteracji<towar>& iteracja, uint32_t width, uint32_t height);
 
 template <typename towar, typename transformata>
+__host__ void plot_spacer_dla_kraty_2D(spacer_losowy<towar, transformata>& spacer, statyczny_wektor<towar>& wartosci, graf& przestrzen, grafika* G, uint32_t width, uint32_t height, float skala_obrazu, std::string nazwa_wykresu);
+
+template <typename towar, typename transformata>
 __host__ void plot_spacer_dla_kraty_2D(spacer_losowy<towar, transformata>& spacer, uint64_t pokazywana_grafika, graf& przestrzen, grafika* G, uint32_t width, uint32_t height, float skala_obrazu, std::string nazwa_wykresu);
+
+template <typename towar, typename transformata>
+__host__ grafika* grafika_P_kierunkow_dla_kraty_2D(spacer_losowy<towar, transformata>& spacer, statyczny_wektor<towar>& wartosci, uint32_t width, uint32_t height, double* suma_ptr = nullptr, float wzmocnienie = 1.0, bool kasuj_data = true);
 
 template <typename towar, typename transformata>
 __host__ grafika* grafika_P_kierunkow_dla_kraty_2D(spacer_losowy<towar, transformata>& spacer, spacer::dane_iteracji<towar>& iteracja, uint32_t width, uint32_t height, double* suma_ptr = nullptr, float wzmocnienie = 1.0, bool kasuj_data = true);

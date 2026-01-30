@@ -83,4 +83,3 @@ __host__ void laplasuj_po_przestrzeni(spacer::dane_trwale<TMCQ>* trwale,
 		(trwale, zrodlo, zwrot, przydzielacz);
 }
 
-

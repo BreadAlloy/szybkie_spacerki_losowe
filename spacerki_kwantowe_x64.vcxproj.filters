@@ -123,6 +123,9 @@
     <ClCompile Include="losowe.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="rozniczka.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="imgui\imconfig.h">
