@@ -24,11 +24,11 @@
 
 #include "przejrzenie_reczne.h"
 
+#include "eksperyment.h"
 
 // Main code
 int main(int argc, char** argv)
 {
-
     //assert(false);
     /*        Test czy CUDA dzia³a          */
     //int mmmmain(int argc, char** argv);
@@ -63,8 +63,9 @@ int main(int argc, char** argv)
 
     //przejrzenie_przestrzeni_opertatorow_mozliwych_tensorowo();
     //przejrzenie_stanow_poczatkowych();
-    //"tensorowe_transformaty_bezfazy"
-    przejrzenie_reczne<TMCQ> przegladacz("losowe_transformaty_z_kola");
+    
+    przejrzenie_reczne<TMCQ> przegladacz("losowe_transformaty_z_kola"); //"tensorowe_transformaty_bezfazy", "losowe_transformaty_z_kola"
+    //eksperyment::zderzenie zderzenie(przegladacz.transformaty_przejrzane.transformaty[293]); // 293
 
     while (!glfwWindowShouldClose(window))
     {
@@ -93,6 +94,7 @@ int main(int argc, char** argv)
         //TSSKD.pokaz_okno(*io);
         //TA.pokaz_okno(*io);
         przegladacz.pokaz_okno();
+        //zderzenie.pokaz_okno();
 
         //processInput(window); // z grafiki
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // czesciowo z grafiki

@@ -92,10 +92,11 @@ struct uklad_transformat{ // zbiornik na transformaty potem bêdzie sprawdzane cz
 
 template<typename transformata>
 struct dane_trwale{ //operatory, to gdzie wysy³aæ, przestrzen, raczej nie zmienia sie z czasem
-	statyczny_wektor<idW_t> gdzie_wyslac; // krawedzie w grafie
 	statyczny_wektor<spacer::wierzcholek> wierzcholki;
-	statyczny_wektor<info_pracownika> znajdywacz_wierzcholka; // znajduje wierzcholek na podstawie indexu watka
 	statyczny_wektor<transformata> transformaty;
+	statyczny_wektor<idW_t> gdzie_wyslac; // krawedzie w grafie
+	statyczny_wektor<info_pracownika> znajdywacz_wierzcholka; // znajduje wierzcholek na podstawie indexu watka
+	
 	statyczny_wektor<idW_t> indeksy_absorbowane;
 	double poczatkowe_prawdopodobienstwo = 1.0;
 

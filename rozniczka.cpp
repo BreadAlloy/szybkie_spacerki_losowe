@@ -43,7 +43,7 @@ __host__ podobienstwo_liniowe dopasuj_liniowo_norma(statyczny_wektor<zesp>& A, s
 	}
 	podob.x = zesp(1.0, 0.0) * NORMA(suma_prawdopodob_A, suma_prawdopodob_B, zesp());
 	for (uint64_t i = 0; i < podob.blad.rozmiar; i++) {
-		podob.blad[i] = - podob.x * A[i] + B[i];
+		podob.blad[i] = podob.x * A[i] + B[i];
 	}
 	return podob;
 }

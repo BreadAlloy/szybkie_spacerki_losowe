@@ -134,7 +134,7 @@ __host__ spacer_losowy<towar, transformata> spacer_krata_2D_cykl(
 	if (zkasuj) delete krata;
 	return spacer;
 }
-
+ 
 template __host__ spacer_losowy<zesp, TMCQ> spacer_krata_2D_cykl(
 	uint32_t liczba_wierzcholkow_boku, TMCQ T, graf* krata);
 

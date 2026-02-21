@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -21,6 +21,7 @@
   <ItemGroup>
     <ClInclude Include="alg_liniowa.h" />
     <ClInclude Include="definicje_typowych_macierzy.h" />
+    <ClInclude Include="eksperyment.h" />
     <ClInclude Include="eksperyment_dwuszczelinowy.h" />
     <ClInclude Include="graf.h" />
     <ClInclude Include="grafika.h" />
@@ -131,6 +132,12 @@
     <CudaCompile Include="transformata_fouriera.cu" />
     <CudaCompile Include="transformaty.cu" />
     <CudaCompile Include="zesp.cu" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="algorytm_szybkiego_spacerku_losowego.md">
+      <SubType>
+      </SubType>
+    </None>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>

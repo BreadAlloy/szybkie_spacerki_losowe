@@ -367,7 +367,7 @@ struct preview_zapisanych{
 template <typename transformata> // nie obs³uguje klasycznych
 struct przejrzenie_reczne{
 	// pola ustawiane przy kompilacji
-	const uint32_t liczba_wierzcholkow_boku = 201;
+	const uint32_t liczba_wierzcholkow_boku = 501;
 	const uint32_t liczba_podgrafik = 5;
 
 	const std::string nazwa_okna;

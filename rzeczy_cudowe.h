@@ -69,3 +69,15 @@ struct przydzielacz_prac {
 };
 
 #define start_kernel(przydzielacz, rozmiar_pamieci_dzielonej, stream) <<<(uint32_t)przydzielacz.ile_blokow, (uint32_t)przydzielacz.ile_watkow, rozmiar_pamieci_dzielonej, stream>>>
+
+//template <typename ptr_type>
+//struct cuda_ptr{
+//	ptr_type* ptr;
+//
+//	ptr_type operator*(){
+//		IFNOTCUDA(){
+//			static_assert(false);
+//		}
+//		return *ptr;
+//	}
+//};
