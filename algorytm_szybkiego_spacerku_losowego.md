@@ -21,16 +21,18 @@ Na podstawie rysunku powyżej możemy przeczytać trochę potrzebnych informacji
 Znamy teraz ile funkcja mieszająca prawdopodobieństwo na wierzchołku będzie mieć argumentów wejścia i wyjścia.
 Własnością implementacji jest to, że musi być tyle samo wejść i wyjść.
 
-<p align="center">
-"Mieszacz prawdopodobieństwa"$(\R^n) \leftarrow \R^n $
-</p>
 
+<p align="center">
+$"Mieszacz\ prawdopodobieństwa"("typ\ towaru"^n) \rightarrow "typ\ towaru"^n$
+	
 | Wierzchołek | n |
 | :---------: |:-:|
 | W0 | 3 |
 | W1 | 1 |
 | W2 | 1 |
 | W3 | 1 |
+
+</p>
 
 Nie są to jednak wszystkie potrzebne informacje o grafie.
 Dla wygody kontroli indeksów wejść i wyjść funkcji, graf inicjalizacyjny musi mieć informacje o kubełkach.
@@ -50,12 +52,12 @@ Przypominam, że każdy kubełek musi mieć jedno wejście i wyjście.
 
 ## Budowa Struktury Danych - dane trwałe
 
-Spacer losowy podzielony został na rzeczy trwałe i zmienne. Dane trwałe *([kod](.\spacer_losowy.h))* w trakcie iterowania mają być readonly.
+Spacer losowy podzielony został na rzeczy trwałe i zmienne. *[Dane trwałe](.\spacer_losowy.h)* w trakcie iterowania mają być readonly.
 Zmienne dane są read-write w procesie iteracji. 
 
 ### Wierzchołek
 
-Co wie o sobie wierzchołek? *([kod](.\spacer_losowy.h))*
+Co wie o sobie *[wierzchołek](.\spacer_losowy.h)*?
  - Jaki jest jego mieszacz prawdopodobieństwa (**transformer**)
  - Jakie są jego wartości w kubełkach (**start_wartosci**)
  - Gdzie dane kubełeki wskazują (**start_wartosci**)
@@ -66,8 +68,8 @@ Co wie o sobie wierzchołek? *([kod](.\spacer_losowy.h))*
 
 ### Dane trwałe 
 
-Struct **dane_trwale** *([kod](.\spacer_losowy.h))* agreguje wszystkie dane trwałe potrzebne do iterowania:
-1. **wierzcholki** - lista wszystkich wierzchołków w spacerze, $rozmiar(wierzcholki) == liczba wierzcholków w grafie$
+Struct **[dane_trwale](.\spacer_losowy.h)** agreguje wszystkie dane trwałe potrzebne do iterowania:
+1. **wierzcholki** - lista wszystkich wierzchołków w spacerze, $rozmiar(wierzcholki) == liczba\ wierzcholków\ w\ grafie$
 2. **transformaty** - przechowuje transformaty(mieszcze prawdopodobieństwa) używane w wierzchołkach
 3. **gdzie_wysylac** - gdzie_wysylac[globalny indeks kubełka] == globalny indeks kubełka do wysłania po zastosowaniu transformaty
 4. **znajdywacz_wierzcholka** - Każdy wątek przychodzi tutaj ze swoim unikatowym indeksie i wie na podstawie **info_prawcownika** na którym wierzchołku ma pracować
@@ -144,7 +146,8 @@ Kolejność to:
 5. **[spacer_losowy.dokoncz_iteracje(dt)](.\spacer_losowy.h)**
 
 Przykładowe użycie:
-'''c++
+
+```cpp
 
 	for (uint64_t i = 0; i < liczba_iteracji; i++) {
 		spacer_cpu.iteracja_na_cpu();
@@ -163,7 +166,7 @@ Przykładowe użycie:
 		}
 		spacer_cpu.dokoncz_iteracje(dt);
 	}
-'''
+```
 
 ### Na GPU
 Tutaj jest trudniej, bo chcemy korzystać z wielowątkowości. Wykorzystywane są 3 strumienie asynchroniczne:
@@ -178,7 +181,8 @@ Tutaj jest trudniej, bo chcemy korzystać z wielowątkowości. Wykorzystywane s�
 Na końcu należy jeszcze zsynchronizować wszystkie strumienie.
 
 Przykładowe użycie:
-'''c++
+
+```cpp
 
 	for(uint32_t i = 0; i < liczba_iteracji; i++){		
 		//Wskazniki poprawne na GPU
@@ -219,7 +223,7 @@ Przykładowe użycie:
 		sprawdzCudaErrors(cudaGetLastError());
 
 	}
-'''
+```
 Albo po prostu użyć **[iteracje_na_gpu()](.\spacer_losowy.cu)**.
 
 ## Ograniczenie prędkości
@@ -237,35 +241,36 @@ Myślę, że jest to blisko możliwej granicy dla sprzętu stosując to podejśc
 Teoretyczny limit ([speki GPU](https://www.techpowerup.com/gpu-specs/geforce-rtx-3070.c3674)):
 	
 ### Liczba operacji zmiennoprzecinkowych
-Jedna iteracja wymaga $501*501$ mnożeń macierzy 4x4 razy wektor.
+Jedna iteracja wymaga $501\*501$ mnożeń macierzy 4x4 razy wektor.
 
-ilość mnożeń liczb zespolonych: $501*501*4*4$
-ilość dodawań liczb zespolonych: $501*501*3*4$
+ilość mnożeń liczb zespolonych: $501\*501\*4\*4$
+ilość dodawań liczb zespolonych: $501\*501\*3\*4$
 
-ilość mnożeń double: ~$501*501*4*4*4=16MFLO$
-ilość dodawań double: $501*501*3*4*2$
+ilość mnożeń double: ~ $501\*501\*4\*4\*4=16MFLO$
+ilość dodawań double: $501\*501\*3\*4\*2$
 
-ilość mnożeń i dodawań double przy normalizacji: ~$501*501*4*2$
+ilość mnożeń i dodawań double przy normalizacji: ~ $501\*501\*4\*2$
 
 Mnożeń jest najwięcej i są wolniejsze, więc zignorujmy liczbe dodawań.
 
-Czyli do policzenia 50000 iteracji potrzeba: $501*501*4*4*4*50000=803 GFLO$
+Czyli do policzenia 50000 iteracji potrzeba: $501\*501\*4\*4\*4\*50000=803 GFLO$
 
 Skoro liczy się przez 20s to używa średnio około: $803 GFLO / 20s = 40 GFLOPS$. Moje GPU w spekach ma  $300 GFLOPS$.
 W tym aspekcie może, by się dało maksymalnie 7.5 razy szybciej policzyć.
 
 ### Prędkość pamięci
-Powiedzmy, że jedna iteracja wymaga przesłania z pamięci całej struktury danych spaceru_losowego. Krata wymaga $501*501*4$ liczb zespolonych. 
-Jest to $501*501*4*2*8=16MB$ pamięci. Na rozmiar całego spaceru pomnożenie razy 3 powinno to sensownie aproksymować.
+Powiedzmy, że jedna iteracja wymaga przesłania z pamięci całej struktury danych spaceru_losowego. Krata wymaga $501\*501\*4$ liczb zespolonych. 
+Jest to $501\*501\*4\*2\*8=16MB$ pamięci. Na rozmiar całego spaceru pomnożenie razy 3 powinno to sensownie aproksymować.
 
 Rozmiar całego spaceru: $~50MB$.
 
-Czyli, aby policzyć 50000 iteracji trzeba przeżucić: $50000*50MB=2.5TB$
+Czyli, aby policzyć 50000 iteracji trzeba przeżucić: $50000\*50MB=2.5TB$
 
-Skoro liczy się przez 20s to używa średnio około: $2.5TB / 20s = 125GB/s$. Moje GPU w spekach ma  $450GB/s$.
-W tym aspekcie może, by się dało maksymalnie 3.5 razy szybciej policzyć.
+Skoro liczy się przez 20s to używa średnio około: $2.5TB/20s = 125GB/s$. Moje GPU w spekach ma  $450GB/s$.
+W tym aspekcie może, by się dało 3.5 razy szybciej policzyć. Możliwe może jest jeszcze szybciej, jeśli jakieś dane trawle w L2 cache trzymało.
+Ja w programie tego nie kontroluje. Dzieje się to automatycznie jeśli już.
 
-Poziom wykorzystania VRAM w trakcie liczenia wynosi ~0.05MB.
+Poziom wykorzystania VRAM w trakcie liczenia wynosi $~0.05MB$.
 Można o wiele większe policzyć i dopuki starcza VRAM powinno ładnie liniowo skalować się z rozmiarem.
 
 
