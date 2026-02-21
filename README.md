@@ -1,18 +1,9 @@
 ## Szybke spacerki losowe
-W tym stanie nie bêdzie siê kompilowæ na innych systemach ni¿ moim.
-Gdyby komuœ zale¿a³o na zkompliowaniu u siebie to proszê o kontakt. 
+W tym stanie nie bÄ™dzie siÄ™ kompilowÄ‡ na innych systemach niÅ¼ moim.
+Gdyby komuÅ› zaleÅ¼aÅ‚o na zkompliowaniu u siebie to proszÄ™ o kontakt. 
 
 <p align="center">
-<video
-muted 
-loop 
-preload="auto" 
-autoPlay 
-playsInline 
-width=500
-src="obrazy/dwu_okrag_ewolucja.mp4">
-
-</video>
+  <img src="obrazy/dwu_okrag_ewolucja.gif" width=500 height=/>
 </p>
 
 <p align="center">
@@ -20,90 +11,90 @@ src="obrazy/dwu_okrag_ewolucja.mp4">
 </p>
 
 ## [Algorytm szybkiego spacerku losowego](./algorytm_szybkiego_spacerku_losowego.md)
-Du¿o bawi³em siê w zrobienie tego, aby ewolucja spaceru losowego by³a szybka.
-I uwa¿am ¿e, zrobienie coœ znacz¹co szybszego ni¿ ja zrobi³em, bêdzie trudne, jeœli nie niemo¿liwe.
+DuÅ¼o bawiÅ‚em siÄ™ w zrobienie tego, aby ewolucja spaceru losowego byÅ‚a szybka.
+I uwaÅ¼am Å¼e, zrobienie coÅ› znaczÄ…co szybszego niÅ¼ ja zrobiÅ‚em, bÄ™dzie trudne, jeÅ›li nie niemoÅ¼liwe.
 
-## Ogólne informacje
-### Kolejnoœæ operacji w iteracji spaceru
-1. Mieszanie w wierzcho³ku(operator monety)
-2. Wys³anie do docelowych kube³ków(operator przesuniêcia)
-3. Absorbcja z podanych kub³eków(opcjonalne usuniêcie prawdopodobieñstwa)
+## OgÃ³lne informacje
+### KolejnoÅ›Ä‡ operacji w iteracji spaceru
+1. Mieszanie w wierzchoÅ‚ku(operator monety)
+2. WysÅ‚anie do docelowych kubeÅ‚kÃ³w(operator przesuniÄ™cia)
+3. Absorbcja z podanych kubÅ‚ekÃ³w(opcjonalne usuwanie prawdopodobieÅ„stwa)
 
-### Ró¿ne operatory monety
-Fizycy lubi¹ u¿ywaæ jednego operatora monety na wszystkich wierzcho³kach. Mog¹ te¿ wtedy, zapisaæ globalny operator jako, $iloczynkronekera(operator perzesuniecia, operator monety)$.
-Natomiast przestaje to dzia³aæ, gdy jakiœ wierzcho³ek jest innego stopnia.
-Dlatego w mojej implementacji ka¿dy wierzcho³ek ma swój w³asny operator monety.
-Mo¿e to byæ ten sam operator w ka¿dym, jeœli ka¿dy wierzcho³ek ma ten sam stopieñ.
+### RÃ³Å¼ne operatory monety
+Fizycy lubiÄ… uÅ¼ywaÄ‡ jednego operatora monety na wszystkich wierzchoÅ‚kach. MogÄ… teÅ¼ wtedy, zapisaÄ‡ globalny operator jako, $iloczynkronekera(operator perzesuniecia, operator monety)$.
+Natomiast przestaje to dziaÅ‚aÄ‡, gdy jakiÅ› wierzchoÅ‚ek jest innego stopnia.
+Dlatego w mojej implementacji kaÅ¼dy wierzchoÅ‚ek ma swÃ³j wÅ‚asny operator monety.
+MoÅ¼e to byÄ‡ ten sam operator w kaÅ¼dym, jeÅ›li kaÅ¼dy wierzchoÅ‚ek ma ten sam stopieÅ„.
 
-### Inny operator przesuniêcia ni¿ normalny
-Grafy na których licze rzeczy trochê siê ró¿ni¹ operatorem przesuniêcia.
-Klasyczna definicja operatora przesuniêcia nie dzia³a dobrze dla dowolnego grafu. 
+### Inny operator przesuniÄ™cia niÅ¼ normalny
+Grafy na ktÃ³rych licze rzeczy trochÄ™ siÄ™ rÃ³Å¼niÄ… operatorem przesuniÄ™cia.
+Klasyczna definicja operatora przesuniÄ™cia nie dziaÅ‚a dobrze dla dowolnego grafu. 
 W przypadku dla lini fizycy by chcieli:
 
 <p align="center">
   <img src="obrazy/uklad_fizykow.png" width=600 height=/>
 </p>
 
-Wtedy dla mieszacza prawdopodobieñstwa identycznoœciowego, prawdopodobieñstwo przemieszcza siê, ze ze sta³a prêdkoœci¹.
-Ja natomiast u¿ywam takiego grafu:
+Wtedy dla mieszacza prawdopodobieÅ„stwa identycznoÅ›ciowego, prawdopodobieÅ„stwo przemieszcza siÄ™, ze ze staÅ‚a prÄ™dkoÅ›ciÄ….
+Ja natomiast uÅ¼ywam takiego grafu:
 
 <p align="center">
   <img src="obrazy/uklad_moj_skier.png" width=600 height=/>
 </p>
 
-Teraz dla mieszacza identycznoœciowego, prawdopodobieñstwo prawie, ¿e stoi w miejscu.
-I mogê graf przedstawiæ za pomoc¹ krawêdzi nieskierowanych:
+Teraz dla mieszacza identycznoÅ›ciowego, prawdopodobieÅ„stwo prawie, Å¼e stoi w miejscu.
+I mogÄ™ graf przedstawiÄ‡ za pomocÄ… krawÄ™dzi nieskierowanych:
 
 <p align="center">
   <img src="obrazy/uklad_moj_nieskier.png" width=600 height=/>
 </p>
 
-Obydwie definicje operatora mog¹ robiæ to samo, przy odpowiedniej permutacji wejœæ lub/i wyjœæ funkcji mieszania prawdopodobieñstwa na wierzcho³kach.
-Konwencja, ¿e kierunek prawdopodobieñstwa ma byæ zachowany, nie dzia³a dobrze dla dowolnego grafu. WeŸmy za przyk³ad graf:
+Obydwie definicje operatora mogÄ… robiÄ‡ to samo, przy odpowiedniej permutacji wejÅ›Ä‡ lub/i wyjÅ›Ä‡ funkcji mieszania prawdopodobieÅ„stwa na wierzchoÅ‚kach.
+Konwencja, Å¼e kierunek prawdopodobieÅ„stwa ma byÄ‡ zachowany, nie dziaÅ‚a dobrze dla dowolnego grafu. WeÅºmy za przykÅ‚ad graf:
 
 <p align="center">
   <img src="obrazy/zagadka.png" width=300 height=/>
 </p>
 
-I pytanie jest jak zdefiniowaæ przejœcia prawdopodobieñstwa miêdzy kube³kami, aby "zachowywa³o swój kierunek"?
+I pytanie jest jak zdefiniowaÄ‡ przejÅ›cia prawdopodobieÅ„stwa miÄ™dzy kubeÅ‚kami, aby "zachowywaÅ‚o swÃ³j kierunek"?
 
-Uwa¿am, ¿e nie istnieje algorytm rozwi¹zuj¹cy to zagadnienie dla dowolnego grafu. Proponuje siê nie zastanawiaæ nad tym. Po prostu daæ krawêdzie nieskierowane i zostawiæ takie rozwa¿ania do operatora monety na wierzcho³ku.
+UwaÅ¼am, Å¼e nie istnieje algorytm rozwiÄ…zujÄ…cy to zagadnienie dla dowolnego grafu. Proponuje siÄ™ nie zastanawiaÄ‡ nad tym. Po prostu daÄ‡ krawÄ™dzie nieskierowane i zostawiÄ‡ takie rozwaÅ¼ania do operatora monety na wierzchoÅ‚ku.
 <p align="center">
   <img src="obrazy/zagadka_rozwiazanie.png" width=300 height=/>
 </p>
 
-### Kolejnoœæ argumentów mieszacza prawdopodobieñstwa
-Definicja po³¹czeñ miêdzy kube³kami wp³ywa na kolejnoœæ argumentów. WeŸmy przypadek dla macierzy.
-Zdarzy³o siê, ¿e zastanawia³em siê dlaczego mam inne wyniki ni¿ kolega.
-Okaza³o siê, ¿e macierz operatora monety dostawa³a i zwraca³a inn¹ permutacje wartoœci w kube³kach.
-Wiêc jest to wa¿ne. U mnie na wierzcho³ku dzia³a to nastêpuj¹co:
+### KolejnoÅ›Ä‡ argumentÃ³w mieszacza prawdopodobieÅ„stwa
+Definicja poÅ‚Ä…czeÅ„ miÄ™dzy kubeÅ‚kami wpÅ‚ywa na kolejnoÅ›Ä‡ argumentÃ³w. WeÅºmy przypadek dla macierzy.
+ZdarzyÅ‚o siÄ™, Å¼e zastanawiaÅ‚em siÄ™ dlaczego mam inne wyniki niÅ¼ kolega.
+OkazaÅ‚o siÄ™, Å¼e macierz operatora monety dostawaÅ‚a i zwracaÅ‚a innÄ… permutacje wartoÅ›ci w kubeÅ‚kach.
+WiÄ™c jest to waÅ¼ne. U mnie na wierzchoÅ‚ku dziaÅ‚a to nastÄ™pujÄ…co:
 <p align="center">
   <img src="obrazy/kolejnosc_w_wektorze.png" width=300 height=/>
 </p>
 
 
 ## Uwagi nazewnictwowe:
-- kube³ek i kierunek oznaczaj¹ praktycznie to samo
-- transformer fizycy nazwali by operatorem, albo operatorem monety, ale operator jest zarezerwowanym keywordem w c++, wiêc u¿ywam nazwy transformer, albo transformata
-- towar to jest zawartoœæ kube³ka
-- template typ zawartoœci kube³ka nazywa siê towar
-- template typ operatora mieszaj¹cego nazywa siê transformata
+- kubeÅ‚ek i kierunek oznaczajÄ… praktycznie to samo
+- transformer fizycy nazwali by operatorem, albo operatorem monety, ale operator jest zarezerwowanym keywordem w c++, wiÄ™c uÅ¼ywam nazwy transformer, albo transformata
+- towar to jest zawartoÅ›Ä‡ kubeÅ‚ka
+- template typ zawartoÅ›ci kubeÅ‚ka nazywa siÄ™ towar
+- template typ operatora mieszajÄ…cego nazywa siÄ™ transformata
 
 
-## Dla tych co c++ nie znaj¹, ale kod chc¹ poczytaæ:
-Zak³adam, ¿e Pythona znasz. c++ nie ró¿ni siê du¿o sk³adniowo od Pythona.
-Poni¿ej zapisa³em podobieñstwa i ró¿nice miêdzy jêzykami które mam nadzieje pozowl¹ ci zrozumieæ kod na podstawie znajomoœci Pythona.
+## Dla tych co c++ nie znajÄ…, ale kod chcÄ… poczytaÄ‡:
+ZakÅ‚adam, Å¼e Pythona znasz. c++ nie rÃ³Å¼ni siÄ™ duÅ¼o skÅ‚adniowo od Pythona.
+PoniÅ¼ej zapisaÅ‚em podobieÅ„stwa i rÃ³Å¼nice miÄ™dzy jÄ™zykami ktÃ³re mam nadzieje pozowlÄ… ci zrozumieÄ‡ kod na podstawie znajomoÅ›ci Pythona.
 
-### \{\} zamiast wciêæ po : 
+### \{\} zamiast wciÄ™Ä‡ po : 
 
-### Wszêdzie na koñcu jest ;
-W Pythonie te¿ tak mo¿na, tu jednak jest to konieczne.
+### WszÄ™dzie na koÅ„cu jest ;
+W Pythonie teÅ¼ tak moÅ¼na, tu jednak jest to konieczne.
 
-### Wszêdzie jest sta³y typ, poza miejscami gdzie typ jest "zmienny"
-Zmienne w c++ maj¹ zdefiniowany sta³y typ. Jest jednak mechanizm operowania na typach, tak ¿e udaje zmienne typy.
-Nazywa siê on template. Podczas kompilacji i tak s¹ sta³e typy. Rzeczy zwi¹zane z tym mechanizmem s¹ w nawiasie <>.
-Silnie z niego korzystam w structcie spacer_losowy, aby na raz móg³ obs³ugiwaæ najwiêcej typów spacerów losowych na podstawie argumentów templateowych.
-Template zawartoœci kube³ka nazywa siê towar. Template operatora mieszaj¹cego nazywa siê transformata. 
+### WszÄ™dzie jest staÅ‚y typ, poza miejscami gdzie typ jest "zmienny"
+Zmienne w c++ majÄ… zdefiniowany staÅ‚y typ. Jest jednak mechanizm operowania na typach, tak Å¼e udaje zmienne typy.
+Nazywa siÄ™ on template. Podczas kompilacji i tak sÄ… staÅ‚e typy. Rzeczy zwiÄ…zane z tym mechanizmem sÄ… w nawiasie <>.
+Silnie z niego korzystam w structcie spacer_losowy, aby na raz mÃ³gÅ‚ obsÅ‚ugiwaÄ‡ najwiÄ™cej typÃ³w spacerÃ³w losowych na podstawie argumentÃ³w templateowych.
+Template zawartoÅ›ci kubeÅ‚ka nazywa siÄ™ towar. Template operatora mieszajÄ…cego nazywa siÄ™ transformata. 
 
 ### Troche inne fory
 | Python | c++ |
@@ -111,8 +102,8 @@ Template zawartoœci kube³ka nazywa siê towar. Template operatora mieszaj¹cego na
 | for i in X | for(auto& i : X) |
 | for i in range(n, m, k) | for(int i = n; i < m; i += k) |
 
-## Szczegó³y techniczne projektu
-Warningi ze wszystkich plików Ÿród³owych z grafiki komputerowej s¹ ignorowane(zrobione w solution explorer albo/i #pragma). I wszystkie warningi w plikach cpp w folderze s¹ zdisablowane.
+## SzczegÃ³Å‚y techniczne projektu
+Warningi ze wszystkich plikÃ³w ÅºrÃ³dÅ‚owych z grafiki komputerowej sÄ… ignorowane(zrobione w solution explorer albo/i #pragma). I wszystkie warningi w plikach cpp w folderze sÄ… zdisablowane.
 
 
 
