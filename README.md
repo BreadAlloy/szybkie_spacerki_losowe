@@ -2,9 +2,20 @@
 W tym stanie nie będzie się kompilowć na innych systemach niż moim.
 Gdyby komuś zależało na zkompliowaniu u siebie to proszę o kontakt. 
 
-<p align="center">
-  <img src="obrazy/dwu_okrag_ewolucja.gif" width=500 height=/>
+<p align="center" width=500>
+<video
+muted 
+loop 
+preload="auto" 
+autoPlay 
+playsInline
+width=500
+align="center"
+type="video/mp4"
+src="https://github.com/BreadAlloy/szybkie_spacerki_losowe/blob/master/obrazy/dwu_okrag_ewolucja.mp4"/>
 </p>
+  
+<https://github.com/user-attachments/assets/2d2ea804-d2c4-477e-9d3a-9beff09a3be5/>
 
 <p align="center">
   <img src="obrazy/przyklady_ewolucji.png" width=1000 height=/>
