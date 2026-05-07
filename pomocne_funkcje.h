@@ -1,5 +1,5 @@
 #pragma once
-
+	
 #include "rzeczy_cudowe.h"
 
 #ifdef NDEBUG

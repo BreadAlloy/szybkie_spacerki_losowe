@@ -52,7 +52,7 @@ int main(int argc, char** argv)
 
     //test_spaceru_klasyczny_dyskretny TSKD;
     //test_spaceru_kwantowy_dyskretny TSQD;
-    //test_spaceru_kwantowy_dyskretny_gpu TSQDG;
+    test_spaceru_kwantowy_dyskretny_gpu TSQDG;
     //test_spaceru_kwantowy_ciagly TSQC;
     //test_czasow_wykonania_kwantowy TCWQ;
     //test_sciezki_spaceru_kwantowy_dyskretny TSSKD;
@@ -64,7 +64,7 @@ int main(int argc, char** argv)
     //przejrzenie_przestrzeni_opertatorow_mozliwych_tensorowo();
     //przejrzenie_stanow_poczatkowych();
     
-    przejrzenie_reczne<TMCQ> przegladacz("losowe_transformaty_z_kola"); //"tensorowe_transformaty_bezfazy", "losowe_transformaty_z_kola"
+    //przejrzenie_reczne<TMCQ> przegladacz("losowe_transformaty_z_kola"); //"tensorowe_transformaty_bezfazy", "losowe_transformaty_z_kola"
     //eksperyment::zderzenie zderzenie(przegladacz.transformaty_przejrzane.transformaty[293]); // 293
 
     while (!glfwWindowShouldClose(window))
@@ -88,12 +88,12 @@ int main(int argc, char** argv)
 
         //TSKD.pokaz_okno(*io);
         //TSQD.pokaz_okno(*io);
-        //TSQDG.pokaz_okno(*io);
+        TSQDG.pokaz_okno(*io);
         //TSQC.pokaz_okno(*io);
         //TCWQ.pokaz_okno(*io);
         //TSSKD.pokaz_okno(*io);
         //TA.pokaz_okno(*io);
-        przegladacz.pokaz_okno();
+        //przegladacz.pokaz_okno();
         //zderzenie.pokaz_okno();
 
         //processInput(window); // z grafiki

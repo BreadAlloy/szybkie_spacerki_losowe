@@ -716,17 +716,20 @@ __host__ void test_funkcji_tworzacych_spacery_2(transformata T, transformata bok
 
 //template __host__ spacer::uklad_transformat<transformata_macierz<double>> uklad_transformat_dla_lini<transformata_macierz<double>>(uint32_t liczba_wierzcholkow, transformata_macierz<double>& srodek, transformata_macierz<double>& koniec);
 
-template <typename towar, typename transformata>
-__global__ void iteracje_na_gpu(spacer_losowy<towar, transformata>* lokalizacja_na_device, uint64_t ile_blokow, uint64_t liczba_iteracji = 1, uint64_t ile_prac_wykonac = 1);
+//template <typename towar, typename transformata>
+//__global__ void iteracje_na_gpu(spacer_losowy<towar, transformata>* lokalizacja_na_device, uint64_t ile_blokow, uint64_t liczba_iteracji = 1, uint64_t ile_prac_wykonac = 1);
 
 
 constexpr int max_ilosc_watkow_w_bloku = 100;
 
-template <typename towar, typename transformata>
-__host__ void iteruj_na_gpu(spacer_losowy<towar, transformata>& spacer,
-	uint64_t liczba_iteracji = 1, uint64_t liczba_watkow = max_ilosc_watkow_w_bloku);
+//template <typename towar, typename transformata>
+//__host__ void iteruj_na_gpu(spacer_losowy<towar, transformata>& spacer,
+//	uint64_t liczba_iteracji = 1, uint64_t liczba_watkow = max_ilosc_watkow_w_bloku);
 
 template <typename towar, typename transformata>
 __host__ void iteracje_na_gpu(spacer_losowy<towar, transformata>& spacer, double delta_t,
 	uint64_t liczba_iteracji, uint64_t ile_prac_na_watek, uint32_t ile_watkow_na_blok_max, uint32_t co_ile_zapisac, uint32_t co_ile_normalizuj = 0xFFFFFFFF, uint32_t co_ile_absorbuj = 1);
 
+template <typename towar, typename transformata>
+__host__ void proste_iteracje_na_gpu(spacer_losowy<towar, transformata>& spacer, double delta_t,
+	uint64_t liczba_iteracji, uint64_t ile_prac_na_watek, uint32_t ile_watkow_na_blok_max, uint32_t co_ile_zapisac);

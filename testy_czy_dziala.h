@@ -281,7 +281,6 @@ struct test_spaceru_kwantowy_dyskretny {
 
 struct test_spaceru_kwantowy_dyskretny_gpu {
 	std::vector<grafika*> grafiki_iteracji;
-	grafika* celownik = nullptr;
 	std::string nazwa_okna;
 
 	uint32_t height = 0;
@@ -292,15 +291,15 @@ struct test_spaceru_kwantowy_dyskretny_gpu {
 
 	int pokazywana_grafika = 0;
 	float skala_obrazu = 1.0f;
+	float wzmocnienie = 1.0f;
 
-	std::vector<zesp> katy;
-	std::vector<double> katy_norm;
 	std::vector<double> prawdopodop;
 	std::vector<double> czasy;
 
-	const uint32_t liczba_wierzcholkow_boku = 101;
-	const uint32_t liczba_iteracji = 200;
-	const uint32_t jak_czesto_zapisac = 5;
+	static constexpr uint32_t skalar_instancji = 20;
+	static constexpr uint32_t liczba_wierzcholkow_boku = 100 * skalar_instancji + 1;
+	static constexpr uint32_t liczba_iteracji = 200 * skalar_instancji;
+	static constexpr uint32_t jak_czesto_zapisac = 50 * skalar_instancji;
 
 	graf przestrzen;
 	spacer_losowy<zesp, TMDQ> spacer;
@@ -308,7 +307,7 @@ struct test_spaceru_kwantowy_dyskretny_gpu {
 	__host__ test_spaceru_kwantowy_dyskretny_gpu()
 		: nazwa_okna("Test spaceru kwantowego dyskretny GPU")
 		, przestrzen(graf_krata_2D(liczba_wierzcholkow_boku))
-		, spacer(spacer_krata_2D<zesp, TMDQ>(liczba_wierzcholkow_boku, HxH, I_4, &przestrzen)) {
+		, spacer(spacer_krata_2D<zesp, TMDQ>(liczba_wierzcholkow_boku, tensor(X, H), I_4, &przestrzen)) {
 
 		spacer.iteracjaA[spacer.trwale.wierzcholki[(liczba_wierzcholkow_boku * liczba_wierzcholkow_boku) / 2].start_wartosci] = jeden(zesp()) / std::sqrt(2.0);
 		spacer.iteracjaA[spacer.trwale.wierzcholki[((liczba_wierzcholkow_boku * liczba_wierzcholkow_boku) / 2) + 1].start_wartosci + 2] = jeden(zesp()) / std::sqrt(2.0);
@@ -316,22 +315,20 @@ struct test_spaceru_kwantowy_dyskretny_gpu {
 		printf("CUDA start\n");
 		spacer.zbuduj_na_cuda();
 
-		spacer.zapisz_iteracje();
-		for (uint64_t i = 1; i < liczba_iteracji; i += jak_czesto_zapisac) {
-			//for(uint64_t j = 0; j < spacer.trwale.ile_watkow(10); j++){
-			//	symulowana_iteracja_na_gpu<zesp, TMDQ>(&spacer, j);
-			//}
-			//spacer.dokoncz_iteracje(1.0);
-			iteruj_na_gpu<zesp, TMDQ>(spacer, jak_czesto_zapisac);
-			spacer.cuda_przynies();
-			spacer.zapisz_iteracje();
-		}
+		//spacer.zapisz_iteracje();
+		//for (uint64_t i = 1; i < liczba_iteracji; i += jak_czesto_zapisac) {
+		//	//for(uint64_t j = 0; j < spacer.trwale.ile_watkow(10); j++){
+		//	//	symulowana_iteracja_na_gpu<zesp, TMDQ>(&spacer, j);
+		//	//}
+		//	//spacer.dokoncz_iteracje(1.0);
+		//	iteruj_na_gpu<zesp, TMDQ>(spacer, jak_czesto_zapisac);
+		//	spacer.cuda_przynies();
+		//	spacer.zapisz_iteracje();
+		//}
+		proste_iteracje_na_gpu<zesp, TMDQ>(spacer, 1.0, liczba_iteracji, 70, 300, jak_czesto_zapisac);
 
 		spacer.zburz_na_cuda();
 		printf("CUDA koniec\n");
-
-		celownik = new grafika("textures/crosshair.png");
-		ASSERT_Z_ERROR_MSG(celownik->texture != 0, "Cos nie tak z textura celownika\n");
 
 		przygotuj_grafiki();
 	}
@@ -346,24 +343,14 @@ struct test_spaceru_kwantowy_dyskretny_gpu {
 		ASSERT_Z_ERROR_MSG(height * width == spacer.trwale.liczba_wierzcholkow(), "Tego spaceru nie da sie przedstawic jako kwadrat\n");
 
 		grafiki_iteracji.resize(liczba_zapamietanych_iteracji());
-		katy.resize(liczba_zapamietanych_iteracji());
-		katy_norm.resize(liczba_zapamietanych_iteracji());
 		prawdopodop.resize(liczba_zapamietanych_iteracji());
 		czasy.resize(liczba_zapamietanych_iteracji());
 
 		for (uint64_t i = 0; i < spacer.iteracje_zapamietane.rozmiar; i++) {
 			spacer::dane_iteracji<zesp>& iteracja = *(spacer.iteracje_zapamietane[i]);
-			grafiki_iteracji[i] = grafika_P_dla_kraty_2D(spacer, iteracja,
-				width, height, &(prawdopodop[i]));
+			grafiki_iteracji[i] = grafika_P_kierunkow_dla_kraty_2D(spacer, iteracja,
+				width, height, &(prawdopodop[i]), wzmocnienie);
 			czasy[i] = iteracja.czas;
-		}
-
-		spacer::dane_iteracji<zesp>& iteracja_pierwsza = *(spacer.iteracje_zapamietane[0]);
-
-		for (uint64_t i = 0; i < spacer.iteracje_zapamietane.rozmiar; i++) {
-			spacer::dane_iteracji<zesp>& iteracja = *(spacer.iteracje_zapamietane[i]);
-			katy[i] = dot(iteracja_pierwsza.wartosci, iteracja.wartosci);
-			katy_norm[i] = std::sqrt(katy[i].norm());
 		}
 	}
 
@@ -371,8 +358,12 @@ struct test_spaceru_kwantowy_dyskretny_gpu {
 		grafika* G = grafiki_iteracji[pokazywana_grafika];
 		ImGui::Text("t = %lf", spacer.iteracje_zapamietane[pokazywana_grafika]->czas);
 		ImGui::SliderFloat("Okres pokazu slajdow(1.0 to brak pokazu)", &okres_pokazu_slajdow, 0.01f, 1.0f);
+		ImGui::SliderFloat("Wzmocnienie", &wzmocnienie, 1.0f, 10.0f);
+		if(ImGui::Button("Policz grafiki")){
+			przygotuj_grafiki();
+		}
 
-		plot_grafike_dla_kraty_2D(spacer, pokazywana_grafika, przestrzen, G, width, height, skala_obrazu);
+		plot_spacer_dla_kraty_2D(spacer, pokazywana_grafika, przestrzen, G, width, height, skala_obrazu, "spacer");
 
 		if (okres_pokazu_slajdow < 0.95f) {
 			double czas = glfwGetTime();
@@ -390,9 +381,6 @@ struct test_spaceru_kwantowy_dyskretny_gpu {
 		if (ImPlot::BeginPlot("##Dane w spacerze", ImVec2(skala_obrazu * 200.0f, skala_obrazu * 200.0f))) {
 			ImPlot::PlotInfLines("Vertical pomocnik", &czasy[pokazywana_grafika], 1);
 			ImPlot::PlotLine("Prawdopodobienstwa suma", czasy.data(), prawdopodop.data(), (int)liczba_zapamietanych_iteracji());
-			ImPlot::PlotLineLepsze("Kat Re", czasy.data(), (double*)katy.data(), (int)liczba_zapamietanych_iteracji(), 0, 0, sizeof(zesp));
-			ImPlot::PlotLineLepsze("Kat Im", czasy.data(), (double*)katy.data() + 1, (int)liczba_zapamietanych_iteracji(), 0, 0, sizeof(zesp));
-			ImPlot::PlotLine("Kat norma", czasy.data(), katy_norm.data(), (int)liczba_zapamietanych_iteracji());
 			ImPlot::EndPlot();
 		}
 	}
@@ -408,7 +396,6 @@ struct test_spaceru_kwantowy_dyskretny_gpu {
 	}
 
 	__host__ ~test_spaceru_kwantowy_dyskretny_gpu() {
-		delete celownik;
 		for (auto g : grafiki_iteracji) {
 			delete g;
 		}

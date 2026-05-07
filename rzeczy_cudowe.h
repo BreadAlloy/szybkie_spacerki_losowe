@@ -49,6 +49,17 @@
 sprawdzCudaErrors(cudaMalloc(reinterpret_cast<void**>(&cel), zrodlo.bajt_rozmiar())); \
 sprawdzCudaErrors(cudaMemcpyAsync(reinterpret_cast<void*>(&cel), reinterpret_cast<void*>(&zrodlo), zrodlo.bajt_rozmiar(), cudaMemcpyHostToDevice, stream));
 
+
+#define VERBOSE TRUE
+
+#ifdef VERBOSE
+#define Vpozycja() printf(__FILE__":%d\n", __LINE__);
+#define Vprintf printf
+#else
+#define Vpozycja()
+#define Vprintf
+#endif
+
 struct przydzielacz_prac {
 	uint64_t ile_prac = 0;
 	uint64_t ile_watkow = 0;
@@ -60,6 +71,13 @@ struct przydzielacz_prac {
 		uint64_t ile_watkow_sumarycznie = ile_prac_sumarycznie / ile_prac_na_watek + 1;
 		ile_blokow = ile_watkow_sumarycznie / max_ile_watkow + 1;
 		ile_watkow = ile_watkow_sumarycznie / ile_blokow + 1;
+
+		Vpozycja();
+		Vprintf("Bede wolac kernele z:\n");
+		Vprintf("%llu blokami\n", ile_blokow);
+		Vprintf("%llu watkami\n", ile_watkow);
+		Vprintf("%llu prac na watek\n", ile_prac);
+
 	}
 
 	__device__ __forceinline__ uint64_t index_pracownika(uint64_t index_pracy, uint64_t index_watka, uint64_t index_bloku) {

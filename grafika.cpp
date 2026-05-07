@@ -84,8 +84,8 @@ __host__ void plot_grafike_dla_kraty_2D(spacer_losowy<towar, transformata>& spac
 			double vals_x[4] = { temp_x - 1.0, temp_x, temp_x + 1.0, temp_x + 2.0 };
 			double vals_y[4] = { temp_y - 1.0, temp_y, temp_y + 1.0, temp_y + 2.0 };
 
-			ImPlot::PlotInfLines("Vertical pomocnik", vals_x, 4);
-			ImPlot::PlotInfLines("Horizontal pomocnik", vals_y, 4, ImPlotInfLinesFlags_Horizontal);
+			ImPlot::PlotInfLines("##Vertical pomocnik", vals_x, 4);
+			ImPlot::PlotInfLines("##Horizontal pomocnik", vals_y, 4, ImPlotInfLinesFlags_Horizontal);
 
 		}
 		ImPlot::EndPlot();
@@ -352,6 +352,7 @@ __host__ void plot_spacer_dla_kraty_2D(spacer_losowy<towar, transformata>& space
 }
 
 template __host__ void plot_spacer_dla_kraty_2D(spacer_losowy<zesp, TMCQ>& spacer, statyczny_wektor<zesp>& wartosci, graf& przestrzen, grafika* G, uint32_t width, uint32_t height, float skala_obrazu, std::string nazwa_wykresu);
+template __host__ void plot_spacer_dla_kraty_2D(spacer_losowy<zesp, TMDQ>& spacer, statyczny_wektor<zesp>& wartosci, graf& przestrzen, grafika* G, uint32_t width, uint32_t height, float skala_obrazu, std::string nazwa_wykresu);
 
 template <typename towar, typename transformata>
 __host__ void plot_spacer_dla_kraty_2D(spacer_losowy<towar, transformata>& spacer, uint64_t pokazywana_grafika, graf& przestrzen, grafika* G, uint32_t width, uint32_t height, float skala_obrazu, std::string nazwa_wykresu) {
@@ -359,6 +360,7 @@ __host__ void plot_spacer_dla_kraty_2D(spacer_losowy<towar, transformata>& space
 }
 
 template __host__ void plot_spacer_dla_kraty_2D(spacer_losowy<zesp, TMCQ>& spacer, uint64_t pokazywana_grafika, graf& przestrzen, grafika* G, uint32_t width, uint32_t height, float skala_obrazu, std::string nazwa_wykresu);
+template __host__ void plot_spacer_dla_kraty_2D(spacer_losowy<zesp, TMDQ>& spacer, uint64_t pokazywana_grafika, graf& przestrzen, grafika* G, uint32_t width, uint32_t height, float skala_obrazu, std::string nazwa_wykresu);
 
 glm::vec3 kolor0(108.0f / 255.0f, 255.0f / 255.0f, 66.0f  / 255.0f);
 glm::vec3 kolor1(255.0f / 255.0f, 77.0f  / 255.0f, 223.0f / 255.0f);
@@ -423,3 +425,6 @@ __host__ grafika* grafika_P_kierunkow_dla_kraty_2D(spacer_losowy<towar, transfor
 
 template __host__ grafika* grafika_P_kierunkow_dla_kraty_2D(spacer_losowy<zesp, TMCQ>& spacer, spacer::dane_iteracji<zesp>& iteracja, uint32_t width, uint32_t height, double* suma_ptr, float wzmocnienie, bool kasuj_data);
 template __host__ grafika* grafika_P_kierunkow_dla_kraty_2D(spacer_losowy<zesp, TMCQ>& spacer, statyczny_wektor<zesp>& wartosci, uint32_t width, uint32_t height, double* suma_ptr, float wzmocnienie, bool kasuj_data);
+
+template __host__ grafika* grafika_P_kierunkow_dla_kraty_2D(spacer_losowy<zesp, TMDQ>& spacer, spacer::dane_iteracji<zesp>& iteracja, uint32_t width, uint32_t height, double* suma_ptr, float wzmocnienie, bool kasuj_data);
+template __host__ grafika* grafika_P_kierunkow_dla_kraty_2D(spacer_losowy<zesp, TMDQ>& spacer, statyczny_wektor<zesp>& wartosci, uint32_t width, uint32_t height, double* suma_ptr, float wzmocnienie, bool kasuj_data);

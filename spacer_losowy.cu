@@ -228,6 +228,44 @@ template __host__ void iteracje_na_gpu<zesp, TMDQ>(spacer_losowy<zesp, TMDQ>& sp
 template __host__ void iteracje_na_gpu<zesp, TMCQ>(spacer_losowy<zesp, TMCQ>& spacer, double delta_t,
 	uint64_t liczba_iteracji, uint64_t ile_prac_na_watek, uint32_t ile_watkow_na_blok_max, uint32_t co_ile_zapisac, uint32_t co_ile_normalizuj, uint32_t co_ile_absorbuj);
 
+template <typename towar, typename transformata>
+__host__ void proste_iteracje_na_gpu(spacer_losowy<towar, transformata>& spacer, double delta_t,
+	uint64_t liczba_iteracji, uint64_t ile_prac_na_watek, uint32_t ile_watkow_na_blok_max, uint32_t co_ile_zapisac) {
+	// spacer nie korzysta z sumy, normalizacji, absorbcji
+
+	przydzielacz_prac przydzielacz_iteracja(spacer.trwale.ile_prac(), ile_prac_na_watek, ile_watkow_na_blok_max);
+
+	for (uint32_t i = 0; i < liczba_iteracji; i++) {
+		//Wskazniki poprawne na GPU
+		spacer::dane_iteracji<towar>* iteracja_z = &(spacer.lokalizacja_na_device->iteracjaA);
+		spacer::dane_iteracji<towar>* iteracja_do = &(spacer.lokalizacja_na_device->iteracjaB);
+		if (spacer.A == false) {
+			iteracja_z = &(spacer.lokalizacja_na_device->iteracjaB);
+			iteracja_do = &(spacer.lokalizacja_na_device->iteracjaA);
+		}
+		spacer::dane_trwale<transformata>* trwale = &(spacer.lokalizacja_na_device->trwale);
+
+		iteracja_na_gpu<towar, transformata>start_kernel(przydzielacz_iteracja, 0, spacer.stream_iteracja)(
+			trwale, iteracja_z, iteracja_do, przydzielacz_iteracja);
+		if (i % co_ile_zapisac == 0) {
+			sprawdzCudaErrors(cudaStreamSynchronize(spacer.stream_iteracja));
+			sprawdzCudaErrors(cudaStreamSynchronize(spacer.stream_pamiec_operacje));
+			sprawdzCudaErrors(cudaGetLastError());
+			spacer.zapisz_iteracje_z_cuda();
+		}
+		spacer.dokoncz_iteracje(delta_t);
+		zakoncz_iteracje<towar, transformata> << <1, 1, 0, spacer.stream_iteracja >> > (iteracja_do, spacer.iteracja_z()->czas);
+
+
+	}
+	sprawdzCudaErrors(cudaStreamSynchronize(spacer.stream_iteracja));
+	sprawdzCudaErrors(cudaStreamSynchronize(spacer.stream_pamiec_operacje));
+	sprawdzCudaErrors(cudaGetLastError());
+}
+
+template __host__ void proste_iteracje_na_gpu<zesp, TMDQ>(spacer_losowy<zesp, TMDQ>& spacer, double delta_t,
+	uint64_t liczba_iteracji, uint64_t ile_prac_na_watek, uint32_t ile_watkow_na_blok_max, uint32_t co_ile_zapisac);
+
 __HD__ void testy_macierzy() {
 	transformata_macierz<double> t1(1.0);
 	transformata_macierz<double> t2(0.75, 0.5, 0.25, 0.5);
