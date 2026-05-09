@@ -10,13 +10,11 @@
 #pragma warning(disable : 4996)
 
 struct zesp {
-    double Re = 0.0;
-    double Im = 0.0;
+    fp_typ Re = 0.0;
+    fp_typ Im = 0.0;
 
-    __HD__ zesp(const double Re_part = 0.0, const double Im_part = 0.0) {
-        Re = Re_part;
-        Im = Im_part;
-    }
+    constexpr __HD__ zesp(const fp_typ Re_part = 0.0, const fp_typ Im_part = 0.0)
+        : Re(Re_part), Im(Im_part){}
 
     __HD__ zesp(const zesp& a) {
         *this = (a);
@@ -38,7 +36,7 @@ struct zesp {
         return res;
     }
 
-    __HD__ double norm() const {
+    __HD__ fp_typ norm() const {
         return Re * Re + Im * Im/* + this->y.Re * this->y.Re + this->y.Im * this->y.Im*/;
     }
 
@@ -47,8 +45,8 @@ struct zesp {
     }
 
     __HD__ zesp sqrt() const {
-        double r = std::sqrt(Re * Re + Im * Im);
-        double a = std::acos(Re / r);
+        fp_typ r = std::sqrt(Re * Re + Im * Im);
+        fp_typ a = std::acos(Re / r);
         //printf("%lf, %lf, %lf\n", r , Im / r, Re / r);
         a = a / 2;
         r = std::sqrt(r);
@@ -66,7 +64,7 @@ struct zesp {
         this->Im -= a.Im;
     }
 
-    __HD__ double abs() const {
+    __HD__ fp_typ abs() const {
         return std::sqrt(Re * Re + Im * Im);
     }
 
@@ -85,7 +83,7 @@ struct zesp {
         return res;
     }
 
-    __HD__ static friend zesp operator/(const zesp& a, const double b) {
+    __HD__ static friend zesp operator/(const zesp& a, const fp_typ b) {
         zesp res(a.Re / b, a.Im / b);
         return res;
     }
@@ -100,7 +98,7 @@ struct zesp {
         a = a / b;
     }
 
-    __HD__ static friend void operator/=(zesp& a, const double& b) {
+    __HD__ static friend void operator/=(zesp& a, const fp_typ& b) {
         a = a / b;
     }
 
@@ -108,7 +106,7 @@ struct zesp {
         a = a * b;
     }
 
-    __HD__ static friend void operator*=(zesp& a, const double& b) {
+    __HD__ static friend void operator*=(zesp& a, const fp_typ& b) {
         a = a * b;
     }
 
@@ -130,6 +128,11 @@ struct zesp {
     }
 };
 
-__HD__ zesp zero(zesp);
-__HD__ zesp jeden(zesp);
+constexpr inline __HD__ zesp zero(zesp) {
+    return zesp(0.0, 0.0);
+}
+
+constexpr inline __HD__ zesp jeden(zesp) {
+    return zesp(1.0, 0.0);
+}
 

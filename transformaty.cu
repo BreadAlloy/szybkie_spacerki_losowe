@@ -105,5 +105,5 @@ __HD__ bool sprawdz_poprawnosc(const transformata_macierz<double>& x) {
 }
 
 #ifdef __CUDA_ARCH__
-#include "zesp.cu"
+//#include "zesp.cu"
 #endif

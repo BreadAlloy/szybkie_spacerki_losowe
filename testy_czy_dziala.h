@@ -296,7 +296,7 @@ struct test_spaceru_kwantowy_dyskretny_gpu {
 	std::vector<double> prawdopodop;
 	std::vector<double> czasy;
 
-	static constexpr uint32_t skalar_instancji = 20;
+	static constexpr uint32_t skalar_instancji = 1;
 	static constexpr uint32_t liczba_wierzcholkow_boku = 100 * skalar_instancji + 1;
 	static constexpr uint32_t liczba_iteracji = 200 * skalar_instancji;
 	static constexpr uint32_t jak_czesto_zapisac = 50 * skalar_instancji;

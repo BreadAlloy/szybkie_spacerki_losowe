@@ -315,6 +315,6 @@ __host__ void cuda_tester(){
 
 #ifdef __CUDA_ARCH__
 #include "transformaty.cu"
-#include "zesp.cu"
+//#include "zesp.cu"
 #endif
 

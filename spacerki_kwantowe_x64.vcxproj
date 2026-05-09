@@ -43,6 +43,7 @@
     <ClInclude Include="rozniczka.cuh" />
     <ClInclude Include="rzeczy_cudowe.h" />
     <ClInclude Include="spacer_2D_wizualizacja.h" />
+    <ClInclude Include="spacer_config.h" />
     <ClInclude Include="spacer_losowy.h" />
     <ClInclude Include="src\Camera.h" />
     <ClInclude Include="src\objload.h" />
@@ -82,7 +83,6 @@
     <ClCompile Include="implot\implot_demo.cpp" />
     <ClCompile Include="implot\implot_items.cpp" />
     <ClCompile Include="losowe.cpp" />
-    <ClCompile Include="pomocne_funkcje.cpp" />
     <ClCompile Include="rozniczka.cpp" />
     <ClCompile Include="spacer_losowy.cpp" />
     <ClCompile Include="szybkie_spacerki_losowe.cpp" />
@@ -123,7 +123,6 @@
       <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">TurnOffAllWarnings</WarningLevel>
     </ClCompile>
     <ClCompile Include="transformaty.cpp" />
-    <ClCompile Include="zesp.cpp" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="rozniczka.cu" />
@@ -131,7 +130,6 @@
     <CudaCompile Include="szybki_kalkulator.cu" />
     <CudaCompile Include="transformata_fouriera.cu" />
     <CudaCompile Include="transformaty.cu" />
-    <CudaCompile Include="zesp.cu" />
   </ItemGroup>
   <ItemGroup>
     <None Include="algorytm_szybkiego_spacerku_losowego.md">

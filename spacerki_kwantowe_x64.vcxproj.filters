@@ -96,16 +96,10 @@
     <ClCompile Include="graf.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="pomocne_funkcje.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="spacer_losowy.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="transformaty.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="zesp.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="grafika.cpp">
@@ -257,13 +251,18 @@
     <ClInclude Include="eksperyment.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="spacer_config.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="szybki_kalkulator.cu" />
     <CudaCompile Include="spacer_losowy.cu" />
     <CudaCompile Include="transformaty.cu" />
-    <CudaCompile Include="zesp.cu" />
     <CudaCompile Include="transformata_fouriera.cu" />
     <CudaCompile Include="rozniczka.cu" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="algorytm_szybkiego_spacerku_losowego.md" />
   </ItemGroup>
 </Project>

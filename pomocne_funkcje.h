@@ -2,6 +2,8 @@
 	
 #include "rzeczy_cudowe.h"
 
+#include "spacer_config.h"
+
 #ifdef NDEBUG
 	#undef NDEBUG
 	#include <cassert>  // asserty w trybie z debugiem
@@ -43,10 +45,3 @@ _ACRTIMP void __cdecl _wassert(
 				  printf("Trwalo: %d ms\n", diff/1000);
 
 
-static inline __HD__ double zero(double) {
-	return 0.0;
-}
-
-static inline __HD__ double jeden(double) {
-	return 1.0;
-}
