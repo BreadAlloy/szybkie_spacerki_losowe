@@ -291,7 +291,7 @@ struct test_spaceru_kwantowy_dyskretny_gpu {
 
 	int pokazywana_grafika = 0;
 	float skala_obrazu = 1.0f;
-	float wzmocnienie = 1.0f;
+	float wzmocnienie = 1.0f; 
 
 	std::vector<double> prawdopodop;
 	std::vector<double> czasy;
