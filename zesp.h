@@ -129,10 +129,10 @@ struct zesp {
 };
 
 constexpr inline __HD__ zesp zero(zesp) {
-    return zesp(0.0, 0.0);
+    return zesp(zero(double()), zero(double()));
 }
 
 constexpr inline __HD__ zesp jeden(zesp) {
-    return zesp(1.0, 0.0);
+    return zesp(jeden(double()), zero(double()));
 }
 

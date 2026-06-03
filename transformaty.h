@@ -113,14 +113,14 @@ struct transformata_macierz {
 	}
 
 	__HD__ towar& operator()(uint8_t row, uint8_t column) {
-		lepszy_assert(row < arrnosc);
-		lepszy_assert(column < arrnosc);
+		spacer_assert(row < arrnosc);
+		spacer_assert(column < arrnosc);
 		return macierz[(uint32_t)row * (uint32_t)arrnosc + (uint32_t)column];
 	}
 
 	__HD__ towar operator()(uint8_t row, uint8_t column) const {
-		lepszy_assert(row < arrnosc);
-		lepszy_assert(column < arrnosc);
+		spacer_assert(row < arrnosc);
+		spacer_assert(column < arrnosc);
 		return macierz[(uint32_t)row * (uint32_t)arrnosc + (uint32_t)column];
 	}
 	

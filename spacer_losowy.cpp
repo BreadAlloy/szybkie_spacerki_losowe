@@ -171,3 +171,67 @@ template __host__ void test_funkcji_tworzacych_spacery<double, TMDK>(TMDK T, TMD
 //template __host__ spacer::uklad_transformat<transformata_macierz<double>> uklad_transformat_dla_lini<transformata_macierz<double>>(uint32_t liczba_wierzcholkow, transformata_macierz<double>& srodek, transformata_macierz<double>& koniec);
 //template __host__ spacer::uklad_transformat<transformata> uklad_transformat_dla_lini<transformata_macierz<double>>(uint32_t liczba_wierzcholkow, transformata& srodek, transformata& koniec);
 
+
+
+//											---===GRAFY WIELOCZASTECZKOWE===---
+template<typename transformata>
+__host__ spacer::uklad_transformat<transformata> uklad_transformat_dla_lini_2_czastki(
+	uint32_t liczba_wierzcholkow, transformata& T_te_same_pozycje, transformata& T_rozne_pozycje) {
+	
+	ASSERT_Z_ERROR_MSG(T_te_same_pozycje.arrnosc == 4, "Niepoprawna arrnosc\n");
+	ASSERT_Z_ERROR_MSG(T_rozne_pozycje.arrnosc == 2, "Niepoprawna arrnosc\n");
+
+	transformata T_rozne_pozycje_ztensorowana = tensor(T_rozne_pozycje, T_rozne_pozycje);
+	
+	// Najpierw pole potem oddzia³ywanie
+	transformata T_te_same_pozycje_wymnozona = mnoz(T_te_same_pozycje, T_rozne_pozycje_ztensorowana);
+
+	T_te_same_pozycje_wymnozona.sprawdz();
+	T_rozne_pozycje_ztensorowana.sprawdz();
+
+	ID_W liczba_kombinacji = liczba_wierzcholkow * liczba_wierzcholkow;
+	spacer::uklad_transformat<transformata> uklad(liczba_kombinacji);
+	
+	uint64_t id_rozne_pozycje = uklad.dodaj_transformate(T_rozne_pozycje_ztensorowana);
+	uint64_t id_te_same_pozycje = uklad.dodaj_transformate(T_te_same_pozycje_wymnozona);
+
+	for(ID_W i = 0; i < liczba_wierzcholkow; i++) {
+	for (ID_W j = 0; j < liczba_wierzcholkow; j++) {
+		ID_W id_kombinacji = i * liczba_wierzcholkow + j;
+
+		if(i == j){
+			uklad.podepnij_transformate(id_te_same_pozycje, id_kombinacji);
+		} else {
+			uklad.podepnij_transformate(id_rozne_pozycje, id_kombinacji);
+		}
+
+	}}
+
+	return uklad;
+}
+
+template<typename towar, typename transformata>
+__host__ spacer_losowy<towar, transformata> spacer_linia_2_czastki(
+	uint32_t liczba_wierzcholkow, transformata T_te_same_pozycje, transformata T_rozne_pozycje, graf* linia_tensorowana) {
+
+	bool zkasuj = false;
+	if (linia_tensorowana == nullptr) {
+		//czy to nie jest niewydajne?
+		linia_tensorowana = new graf(graf_lini(liczba_wierzcholkow, BEZ_NAZW).tensorowy(2));
+		zkasuj = true;
+	}
+
+	spacer_losowy<towar, transformata> spacer(*linia_tensorowana);
+	spacer::uklad_transformat<transformata> transformaty = uklad_transformat_dla_lini_2_czastki<transformata>(liczba_wierzcholkow, T_te_same_pozycje, T_rozne_pozycje);
+	spacer.trwale.dodaj_transformaty(transformaty);
+	spacer.trwale.przygotuj_znajdywacz_wierzcholka();
+	spacer.przygotuj_pierwsza_iteracje();
+	spacer.iteracjaA[0] = jeden(towar());
+	spacer.czy_gotowy();
+
+	if (zkasuj) delete linia_tensorowana;
+	return spacer;
+}
+
+template __host__ spacer_losowy<zesp, TMDQ> spacer_linia_2_czastki(
+	uint32_t liczba_wierzcholkow, TMDQ T_te_same_pozycje, TMDQ T_rozne_pozycje, graf* linia_tensorowana);

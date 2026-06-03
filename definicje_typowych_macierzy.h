@@ -47,3 +47,7 @@ extern const transformata_macierz<zesp> TJF;
 
 //					        Fourier 4x4
 extern const transformata_macierz<zesp> Fourier_4;
+
+//					        CNOT
+extern const transformata_macierz<zesp> CX;
+

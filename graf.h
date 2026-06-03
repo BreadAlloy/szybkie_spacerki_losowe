@@ -253,6 +253,110 @@ struct graf {
 		return R += B;
 	}
 
+	graf tensorowy(const uint8_t krotnosc) const{
+		ASSERT_Z_ERROR_MSG(czy_gotowy(), "Graf musi byc gotowy\n");
+		ID_W tensorowa_liczba_wierzcholkow = 1;
+		for(uint8_t i = 0 ; i < krotnosc; i++){
+			tensorowa_liczba_wierzcholkow *= liczba_wierzcholkow();
+		}
+		graf tensorowy(tensorowa_liczba_wierzcholkow);
+
+		std::vector<ID_W> tensorowane_idW(krotnosc, 0);
+
+		std::vector<const grafowe::wierzcholek*> tensorowane_W(krotnosc);
+		for (auto& W : tensorowane_W) W = &(wierzcholki[0]);
+
+		while (true) {
+			ID_W indeks_liniowy = tensorowane_idW.back();
+			for(uint8_t i = krotnosc - 2; i < krotnosc; i--){
+				indeks_liniowy *= liczba_wierzcholkow();
+				indeks_liniowy += tensorowane_idW[i];
+			}
+
+			std::string tensorowy_opis = tensorowane_W.back() -> opis;
+			for(uint8_t i = krotnosc - 2; i < krotnosc; i--){
+				tensorowy_opis += ("@" + tensorowane_W[i]->opis);
+			}
+			tensorowy.update_opis(indeks_liniowy, tensorowy_opis);
+
+			ID_K tensorowa_liczba_polaczen = 1;
+			for(uint8_t i = 0; i < krotnosc; i++){
+				tensorowa_liczba_polaczen *= tensorowane_W[i]->liczba_polaczen();
+			}			
+			tensorowy.zdefiniuj_liczbe_polaczen(indeks_liniowy, tensorowa_liczba_polaczen);
+
+			// znajdü kaødπ kombinacje wierzcho≥kÛw
+			tensorowane_idW[0]++;
+			uint8_t j = 0;
+			for (; j < (krotnosc - 1); j++) {
+				if (tensorowane_idW[j] < liczba_wierzcholkow()) break;
+
+				tensorowane_idW[j] = 0;
+				tensorowane_idW[j + 1]++;
+			}
+			if (tensorowane_idW.back() >= liczba_wierzcholkow()) break;
+
+			for(; j < krotnosc; j--){
+				tensorowane_W[j] = &(wierzcholki[tensorowane_idW[j]]);
+			}
+			// znajdü kaødπ kombinacje wierzcho≥kÛw
+		}
+
+		std::vector<size_t> tensorowane_idK(krotnosc, 0);
+
+		std::vector<const grafowe::krawedz*> tensorowane_K(krotnosc);
+		for(auto& K : tensorowane_K) K = &(krawedzie[0]);
+
+		while(true){
+			ID_W index_wierzcholka_z = tensorowane_K.back()->index_wierzcholka_z;
+			for (uint8_t i = krotnosc - 2; i < krotnosc; i--) {
+				index_wierzcholka_z *= liczba_wierzcholkow();
+				index_wierzcholka_z += tensorowane_K[i]->index_wierzcholka_z;
+			}
+
+			ID_W index_wierzcholka_do = tensorowane_K.back()->index_wierzcholka_do;
+			for (uint8_t i = krotnosc - 2; i < krotnosc; i--) {
+				index_wierzcholka_do *= liczba_wierzcholkow();
+				index_wierzcholka_do += tensorowane_K[i]->index_wierzcholka_do;
+			}
+
+			ID_K index_kubelka_z = tensorowane_K.back()->index_kubelka_z;
+			for (uint8_t i = krotnosc - 2; i < krotnosc; i--) {
+				index_kubelka_z *= wierzcholki[tensorowane_K[i + 1]->index_wierzcholka_z].liczba_polaczen();
+				index_kubelka_z += tensorowane_K[i]->index_kubelka_z;
+			}
+
+			ID_K index_kubelka_do = tensorowane_K.back()->index_kubelka_do;
+			for (uint8_t i = krotnosc - 2; i < krotnosc; i--) {
+				index_kubelka_do *= wierzcholki[tensorowane_K[i + 1]->index_wierzcholka_do].liczba_polaczen();
+				index_kubelka_do += tensorowane_K[i]->index_kubelka_do;
+			}
+
+			tensorowy.dodaj_krawedz(index_wierzcholka_z, index_kubelka_z, 
+								   index_wierzcholka_do, index_kubelka_do);
+
+			// znajdü kaødπ kombinacje krawedzi
+			tensorowane_idK[0]++;
+			uint8_t j = 0;
+			for(; j < (krotnosc - 1); j++){
+				if(tensorowane_idK[j] < liczba_krawedzi()) break;
+
+				tensorowane_idK[j] = 0;
+				tensorowane_idK[j+1]++;
+			}
+			if(tensorowane_idK.back() >= liczba_krawedzi()) break;
+
+			for (; j < krotnosc; j--) {
+				tensorowane_K[j] = &(krawedzie[tensorowane_idK[j]]);
+			}
+			// znajdü kaødπ kombinacje krawedzi
+		}
+
+		ASSERT_Z_ERROR_MSG(tensorowy.czy_gotowy(), "Tensorowy nie jest gotowy ?!?!?!?\n");
+		return tensorowy;
+
+	}
+
 	bool czy_gotowy() const{
 		bool ret = true;
 		for(auto& w : wierzcholki){

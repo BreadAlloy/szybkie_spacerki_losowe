@@ -205,12 +205,16 @@ graf graf_krata_3D(uint32_t liczba_wierzcholkow_boku, bool z_nazwami){
 
 void test_funkcji_tworzacych_grafy(){
 	graf linia3 = graf_lini(3);
+	graf tensorowy3_linia3 = linia3.tensorowy(3);
 	graf linia10 = graf_lini(10);
+	graf tensorowy3_linia10 = linia10.tensorowy(3);
 	graf linia1000 = graf_lini(1000);
 	graf cykl3 = graf_lini_cykl(3);
 	graf cykl10 = graf_lini_cykl(10);
+	graf tensorowy3_cylk10 = cykl10.tensorowy(3);
 	graf cykl1000 = graf_lini_cykl(1000);
 	graf krata2d_3 = graf_krata_2D(3);
 	graf krata2d_10 = graf_krata_2D(10);
+	graf tensorowy3_krata2d_10 = krata2d_10.tensorowy(3);
 	graf krata2d_1000 = graf_krata_2D(1000);
 }

@@ -70,3 +70,10 @@ zesp dane_Fourier_4[16] = { zesp(1.0, 0.0) / sqrt_4, zesp(1.0, 0.0)  / sqrt_4, z
 							zesp(1.0, 0.0) / sqrt_4, zesp(-1.0, 0.0) / sqrt_4, zesp(1.0, 0.0)  / sqrt_4, zesp(-1.0, 0.0) / sqrt_4,
 							zesp(1.0, 0.0) / sqrt_4, zesp(0.0, 1.0)  / sqrt_4, zesp(-1.0, 0.0) / sqrt_4, zesp(0.0, -1.0) / sqrt_4 };
 const transformata_macierz<zesp> Fourier_4(4, dane_Fourier_4);
+
+//					        CNOT
+zesp dane_CX[16] = { 1.0, 0.0, 0.0, 0.0,
+					  0.0, 1.0, 0.0, 0.0,
+					  0.0, 0.0, 0.0, 1.0,
+					  0.0, 0.0, 1.0, 0.0 };
+const transformata_macierz<zesp> CX(4, dane_CX);

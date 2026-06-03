@@ -18,6 +18,8 @@
 
 #include "testy_czy_dziala.h"
 
+#include "spojrzenie_2_czastki.h"
+
 #include "alg_liniowa.h"
 
 #include "zadanie.h"
@@ -52,11 +54,14 @@ int main(int argc, char** argv)
 
     //test_spaceru_klasyczny_dyskretny TSKD;
     //test_spaceru_kwantowy_dyskretny TSQD;
-    test_spaceru_kwantowy_dyskretny_gpu TSQDG;
+    //test_spaceru_kwantowy_dyskretny_gpu TSQDG;
     //test_spaceru_kwantowy_ciagly TSQC;
     //test_czasow_wykonania_kwantowy TCWQ;
     //test_sciezki_spaceru_kwantowy_dyskretny TSSKD;
     //test_absorbcji TA;
+    //zabawy_dowolne ZD;
+
+    spojrzenie_2_czastki::linia_TMDQ S2CLQ;
 
     //test_funkcji_tworzacych_grafy();
     //test_ortonormalizacji();
@@ -88,13 +93,15 @@ int main(int argc, char** argv)
 
         //TSKD.pokaz_okno(*io);
         //TSQD.pokaz_okno(*io);
-        TSQDG.pokaz_okno(*io);
+        //TSQDG.pokaz_okno(*io);
         //TSQC.pokaz_okno(*io);
         //TCWQ.pokaz_okno(*io);
         //TSSKD.pokaz_okno(*io);
         //TA.pokaz_okno(*io);
         //przegladacz.pokaz_okno();
         //zderzenie.pokaz_okno();
+        //ZD.pokaz_okno(*io);
+        S2CLQ.pokaz_okno();
 
         //processInput(window); // z grafiki
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // czesciowo z grafiki

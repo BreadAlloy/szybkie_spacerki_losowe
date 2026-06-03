@@ -1,7 +1,7 @@
 #pragma once
 
 #undef IM_ASSERT
-#define IM_ASSERT(_EXPR)  lepszy_assert(_EXPR)
+#define IM_ASSERT(_EXPR)  spacer_assert(_EXPR)
 #include "imgui_internal.h"
 
 #include "spacer_losowy.h"

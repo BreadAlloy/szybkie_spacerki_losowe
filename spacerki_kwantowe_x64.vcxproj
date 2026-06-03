@@ -42,9 +42,11 @@
     <ClInclude Include="przejrzenie_reczne.h" />
     <ClInclude Include="rozniczka.cuh" />
     <ClInclude Include="rzeczy_cudowe.h" />
+    <ClInclude Include="screenshot.h" />
     <ClInclude Include="spacer_2D_wizualizacja.h" />
     <ClInclude Include="spacer_config.h" />
     <ClInclude Include="spacer_losowy.h" />
+    <ClInclude Include="spojrzenie_2_czastki.h" />
     <ClInclude Include="src\Camera.h" />
     <ClInclude Include="src\objload.h" />
     <ClInclude Include="src\Render_Utils.h" />

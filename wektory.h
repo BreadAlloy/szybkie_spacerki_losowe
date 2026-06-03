@@ -121,12 +121,12 @@ struct statyczny_wektor{ // wektor automatycznie mallocujacy i zwalnijacy, nie m
 	}
 
 	__HD__ typ_wskaznika& operator[](uint64_t index) {
-		lepszy_assert(index < rozmiar);
+		spacer_assert(index < rozmiar);
 		return PAMIEC[index];
 	}
 
 	__HD__ typ_wskaznika operator[](uint64_t index) const {
-		lepszy_assert(index < rozmiar);
+		spacer_assert(index < rozmiar);
 		return PAMIEC[index];
 	}
 
@@ -215,11 +215,11 @@ struct wektor_do_pushbackowania{
 	} 
 
 	__HD__ void malloc(size_t nowy_rozmiar) { // rozmiar jest w iloœci obiektów typu wskaŸnika
-		ASSERT_Z_ERROR_MSG(pamiec == nullptr, "Coœ jest w pamieci");
+		ASSERT_Z_ERROR_MSG(pamiec == nullptr, "Coœ jest w pamieci\n");
 		rozmiar = 0;
 		rozmiar_zmallocowany = nowy_rozmiar;
 		pamiec = (typ_wskaznika*)(::malloc(bajt_rozmiar()));
-		ASSERT_Z_ERROR_MSG(pamiec != nullptr, "malloc zawiodl");
+		ASSERT_Z_ERROR_MSG(pamiec != nullptr, "malloc zawiodl\n");
 	}
 
 	__HD__ void memset(typ_wskaznika wartosc) {
@@ -228,6 +228,11 @@ struct wektor_do_pushbackowania{
 
 	__HD__ size_t bajt_rozmiar() const {
 		return rozmiar_zmallocowany * sizeof(typ_wskaznika);
+	}
+
+	__HD__ void resize(size_t nowy_rozmiar){
+		ASSERT_Z_ERROR_MSG(nowy_rozmiar < rozmiar_zmallocowany, "Nie resizeujemy poza malloc poczatkowy\n");
+		rozmiar = nowy_rozmiar;
 	}
 
 	__HD__ void free() {
@@ -245,12 +250,12 @@ struct wektor_do_pushbackowania{
 	}
 
 	__HD__ typ_wskaznika& operator[](uint64_t index) {
-		lepszy_assert(index < rozmiar);
+		spacer_assert(index < rozmiar);
 		return pamiec[index];
 	}
 
 	__HD__ typ_wskaznika operator[](uint64_t index) const {
-		lepszy_assert(index < rozmiar);
+		spacer_assert(index < rozmiar);
 		return pamiec[index];
 	}
 

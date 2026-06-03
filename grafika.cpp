@@ -314,11 +314,12 @@ __host__ void plot_spacer_dla_kraty_2D(spacer_losowy<towar, transformata>& space
 	// Nie sprawdza czy grafika nale¿y do tej iteracji
 
 	ImVec2 bmin(0.0, 0.0);
-	ImVec2 bmax((float)height, (float)width);
+	ImVec2 bmax((float)width, (float)height);
 	ImVec2 uv0(0.0, 0.0);
 	ImVec2 uv1(1.0, -1.0); // bo tak tworze osie przy tworzeniu grafu
-	if (ImPlot::BeginPlot(nazwa_wykresu.c_str(), ImVec2(skala_obrazu * 200.0f, skala_obrazu * 200.0f), ImPlotFlags_Equal)) {
-		ImPlot::PlotImage("P", (ImTextureID)(intptr_t)(G->texture), bmin, bmax, uv0, uv1);
+	if (ImPlot::BeginPlot(nazwa_wykresu.c_str(), ImVec2(skala_obrazu * 200.0f, skala_obrazu * 200.0f))) {
+		ImPlot::SetupAxes("pozycja X", "pozycja Y");
+		ImPlot::PlotImage("##P", (ImTextureID)(intptr_t)(G->texture), bmin, bmax, uv0, uv1);
 		//ImPlot::PlotImage("P_0", (ImTextureID)(intptr_t)(kierunki[0]->texture), bmin, bmax, uv0, uv1);
 		//ImPlot::PlotImage("P_1", (ImTextureID)(intptr_t)(kierunki[1]->texture), bmin, bmax, uv0, uv1);
 		//ImPlot::PlotImage("P_2", (ImTextureID)(intptr_t)(kierunki[2]->texture), bmin, bmax, uv0, uv1);
@@ -343,8 +344,8 @@ __host__ void plot_spacer_dla_kraty_2D(spacer_losowy<towar, transformata>& space
 			double vals_x[4] = { temp_x - 1.0, temp_x, temp_x + 1.0, temp_x + 2.0 };
 			double vals_y[4] = { temp_y - 1.0, temp_y, temp_y + 1.0, temp_y + 2.0 };
 
-			ImPlot::PlotInfLines("Vertical pomocnik", vals_x, 4);
-			ImPlot::PlotInfLines("Horizontal pomocnik", vals_y, 4, ImPlotInfLinesFlags_Horizontal);
+			ImPlot::PlotInfLines("##Vertical pomocnik", vals_x, 4);
+			ImPlot::PlotInfLines("##Horizontal pomocnik", vals_y, 4, ImPlotInfLinesFlags_Horizontal);
 
 		}
 		ImPlot::EndPlot();
@@ -362,18 +363,20 @@ __host__ void plot_spacer_dla_kraty_2D(spacer_losowy<towar, transformata>& space
 template __host__ void plot_spacer_dla_kraty_2D(spacer_losowy<zesp, TMCQ>& spacer, uint64_t pokazywana_grafika, graf& przestrzen, grafika* G, uint32_t width, uint32_t height, float skala_obrazu, std::string nazwa_wykresu);
 template __host__ void plot_spacer_dla_kraty_2D(spacer_losowy<zesp, TMDQ>& spacer, uint64_t pokazywana_grafika, graf& przestrzen, grafika* G, uint32_t width, uint32_t height, float skala_obrazu, std::string nazwa_wykresu);
 
-glm::vec3 kolor0(108.0f / 255.0f, 255.0f / 255.0f, 66.0f  / 255.0f);
-glm::vec3 kolor1(255.0f / 255.0f, 77.0f  / 255.0f, 223.0f / 255.0f);
-glm::vec3 kolor2(255.0f / 255.0f, 187.0f / 255.0f, 77.0f  / 255.0f);
-glm::vec3 kolor3(66.0f  / 255.0f, 164.0f / 255.0f, 255.0f / 255.0f);
+glm::vec3 kolory_kierunkow[4] = {
+	glm::vec3(108.0f / 255.0f, 255.0f / 255.0f, 66.0f  / 255.0f),
+	glm::vec3(255.0f / 255.0f, 77.0f  / 255.0f, 223.0f / 255.0f),
+	glm::vec3(255.0f / 255.0f, 187.0f / 255.0f, 77.0f  / 255.0f),
+	glm::vec3(66.0f  / 255.0f, 164.0f / 255.0f, 255.0f / 255.0f)
+};
 
 template <typename towar, typename transformata>
 __host__ grafika* grafika_P_kierunkow_dla_kraty_2D(spacer_losowy<towar, transformata>& spacer, spacer::dane_iteracji<towar>& iteracja, uint32_t width, uint32_t height, double* suma_ptr, float wzmocnienie, bool kasuj_data) {
 	return grafika_P_kierunkow_dla_kraty_2D(spacer, iteracja.wartosci, width, height, suma_ptr, wzmocnienie, kasuj_data);
 }
 
-template <typename towar, typename transformata>
-__host__ grafika* grafika_P_kierunkow_dla_kraty_2D(spacer_losowy<towar, transformata>& spacer, statyczny_wektor<towar>& wartosci, uint32_t width, uint32_t height, double* suma_ptr, float wzmocnienie, bool kasuj_data) {
+template <typename towar, typename transformata, typename typ_wartosci>
+__host__ grafika* grafika_P_kierunkow_dla_kraty_2D(spacer_losowy<towar, transformata>& spacer, statyczny_wektor<typ_wartosci>& wartosci, uint32_t width, uint32_t height, double* suma_ptr, float wzmocnienie, bool kasuj_data) {
 	// nie sprawdzam czy iteracja nale¿y do spaceru.
 	// potem trzeba zrobic delete grafika*
 
@@ -398,10 +401,9 @@ __host__ grafika* grafika_P_kierunkow_dla_kraty_2D(spacer_losowy<towar, transfor
 		spacer::wierzcholek& wierzcholek = spacer.trwale.wierzcholki[j];
 
 		glm::vec3 kolor(0.0f, 0.0f, 0.0f);
-		kolor += normalizator * (float)P(wartosci[wierzcholek.start_wartosci + 0]) * kolor0;
-		kolor += normalizator * (float)P(wartosci[wierzcholek.start_wartosci + 1]) * kolor1;
-		kolor += normalizator * (float)P(wartosci[wierzcholek.start_wartosci + 2]) * kolor2;
-		kolor += normalizator * (float)P(wartosci[wierzcholek.start_wartosci + 3]) * kolor3;
+		for (uint8_t k = 0; k < wierzcholek.liczba_kierunkow; k++) {
+			kolor += normalizator * (float)P(wartosci[wierzcholek.start_wartosci + k]) * kolory_kierunkow[k];
+		}
 
 		float odciecie_gora = 0.0f;
 		odciecie_gora = MAX(odciecie_gora, kolor.x);
@@ -426,5 +428,69 @@ __host__ grafika* grafika_P_kierunkow_dla_kraty_2D(spacer_losowy<towar, transfor
 template __host__ grafika* grafika_P_kierunkow_dla_kraty_2D(spacer_losowy<zesp, TMCQ>& spacer, spacer::dane_iteracji<zesp>& iteracja, uint32_t width, uint32_t height, double* suma_ptr, float wzmocnienie, bool kasuj_data);
 template __host__ grafika* grafika_P_kierunkow_dla_kraty_2D(spacer_losowy<zesp, TMCQ>& spacer, statyczny_wektor<zesp>& wartosci, uint32_t width, uint32_t height, double* suma_ptr, float wzmocnienie, bool kasuj_data);
 
+
 template __host__ grafika* grafika_P_kierunkow_dla_kraty_2D(spacer_losowy<zesp, TMDQ>& spacer, spacer::dane_iteracji<zesp>& iteracja, uint32_t width, uint32_t height, double* suma_ptr, float wzmocnienie, bool kasuj_data);
 template __host__ grafika* grafika_P_kierunkow_dla_kraty_2D(spacer_losowy<zesp, TMDQ>& spacer, statyczny_wektor<zesp>& wartosci, uint32_t width, uint32_t height, double* suma_ptr, float wzmocnienie, bool kasuj_data);
+template __host__ grafika* grafika_P_kierunkow_dla_kraty_2D(spacer_losowy<zesp, TMDQ>& spacer, statyczny_wektor<double>& wartosci, uint32_t width, uint32_t height, double* suma_ptr, float wzmocnienie, bool kasuj_data);
+
+glm::vec3 kolory_pozycji[4] = {
+	glm::vec3(255.0f / 255.0f, 199.0f / 255.0f, 0.0f / 255.0f),
+	glm::vec3(0.0f / 255.0f, 23.0f / 255.0f, 255.0f / 255.0f)
+};
+
+template <typename towar, typename transformata, typename typ_wartosci>
+__host__ grafika* grafika_P_pozycji_2_krata_2D(spacer_losowy<towar, transformata>& spacer, statyczny_wektor<typ_wartosci>& wartosci1, statyczny_wektor<typ_wartosci>& wartosci2, uint32_t width, uint32_t height, float wzmocnienie, bool kasuj_data) {
+	// nie sprawdzam czy iteracja nale¿y do spaceru.
+	// potem trzeba zrobic delete grafika*
+
+	grafika* G = new grafika(width, height);
+	double max = 0.0;
+
+	for (uint64_t j = 0; j < spacer.trwale.liczba_wierzcholkow(); j++) {
+		double P1 = 0.0;
+		double P2 = 0.0;
+
+		spacer::wierzcholek& wierzcholek = spacer.trwale.wierzcholki[j];
+
+		for (uint8_t k = 0; k < wierzcholek.liczba_kierunkow; k++) {
+			P1 += P(wartosci1[wierzcholek.start_wartosci + k]);
+			P1 += P(wartosci2[wierzcholek.start_wartosci + k]);
+		}
+
+		max = MAX(max, P1);
+		max = MAX(max, P2);
+	}
+
+	float normalizator = (float)(255.0 / max) * wzmocnienie;
+	for (uint64_t j = 0; j < spacer.trwale.liczba_wierzcholkow(); j++) {
+		spacer::wierzcholek& wierzcholek = spacer.trwale.wierzcholki[j];
+
+		glm::vec3 kolor(0.0f, 0.0f, 0.0f);
+		for (uint8_t k = 0; k < wierzcholek.liczba_kierunkow; k++) {
+			kolor += normalizator * (float)P(wartosci1[wierzcholek.start_wartosci + k]) * kolory_pozycji[0];
+			kolor += normalizator * (float)P(wartosci2[wierzcholek.start_wartosci + k]) * kolory_pozycji[1];
+		}
+
+		float odciecie_gora = 0.0f;
+		odciecie_gora = MAX(odciecie_gora, kolor.x);
+		odciecie_gora = MAX(odciecie_gora, kolor.y);
+		odciecie_gora = MAX(odciecie_gora, kolor.z);
+
+		if (odciecie_gora > 255.0f) {
+			kolor = kolor * (255.0f / odciecie_gora);
+		}
+
+		(G->data)[4 * j + 0] = (uint8_t)kolor.x;  // R
+		(G->data)[4 * j + 1] = (uint8_t)kolor.y;  // G
+		(G->data)[4 * j + 2] = (uint8_t)kolor.z;  // B
+		(G->data)[4 * j + 3] = (uint8_t)0xFF;
+	}
+
+	G->LoadTextureFromMemory(kasuj_data);
+	return G;
+}
+
+template __host__ grafika* grafika_P_pozycji_2_krata_2D(spacer_losowy<zesp, TMDQ>& spacer, statyczny_wektor<double>& wartosci1, statyczny_wektor<double>& wartosci2, uint32_t width, uint32_t height, float wzmocnienie, bool kasuj_data);
+
+
+

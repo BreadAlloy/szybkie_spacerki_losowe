@@ -59,6 +59,7 @@ struct transformata_macierz_ciagla_kwantowa : transformata_macierz<zesp> {
 	__HD__ void transformuj(spacer::dane_trwale<TMCQ>& trwale, const spacer::wierzcholek& wierzcholek,
 		spacer::dane_iteracji<zesp>& iteracja_z, spacer::dane_iteracji<zesp>& iteracja_do, uint64_t index_w_wierzcholku, uint64_t)
 	{
+		ASSERT_Z_ERROR_MSG(config::normalizacja, "Tego w tym configu nie wolamy\n");
 		estetyczny_wektor<zesp> a(&(iteracja_z[wierzcholek.start_wartosci]), wierzcholek.liczba_kierunkow);
 		estetyczny_wektor<zesp> b(&(operator()((uint8_t)index_w_wierzcholku, 0)), arrnosc);
 		uint64_t offset_do = (uint64_t)trwale.gdzie_wyslac[wierzcholek.start_wartosci + index_w_wierzcholku];

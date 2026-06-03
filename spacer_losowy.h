@@ -8,6 +8,8 @@
 
 #include "zesp.h"
 
+#include "losowe.h"
+
 typedef double typ_prawdopodobienstwa;
 
 static inline __HD__ double P(double a){
@@ -97,8 +99,12 @@ struct dane_trwale{ //operatory, to gdzie wysy³aæ, przestrzen, raczej nie zmieni
 	statyczny_wektor<idW_t> gdzie_wyslac; // krawedzie w grafie
 	statyczny_wektor<info_pracownika> znajdywacz_wierzcholka; // znajduje wierzcholek na podstawie indexu watka
 	
+	// Do absorbcji i normalizacji
 	statyczny_wektor<idW_t> indeksy_absorbowane;
 	double poczatkowe_prawdopodobienstwo = 1.0;
+
+	// do pomiaru rozproszonego
+	statyczny_wektor<idW_t> indeksy_mierzone;
 
 	__host__ dane_trwale(const graf& przestrzen) {
 		ASSERT_Z_ERROR_MSG(przestrzen.czy_gotowy(), "graf nie byl gotowy\n");
@@ -187,7 +193,13 @@ struct dane_trwale{ //operatory, to gdzie wysy³aæ, przestrzen, raczej nie zmieni
 	}
 
 	__HD__ uint64_t liczba_absorberow(){
+		if (!config::absorbcja) return 0;
 		return indeksy_absorbowane.rozmiar;
+	}
+
+	__HD__ uint64_t liczba_miernikow() {
+		if (!config::mierzenie_rozproszone) return 0;
+		return indeksy_mierzone.rozmiar;
 	}
 
 	__host__ void dodaj_transformaty(uklad_transformat<transformata>& uklad){
@@ -212,6 +224,8 @@ struct dane_trwale{ //operatory, to gdzie wysy³aæ, przestrzen, raczej nie zmieni
 	}
 
 	__host__ void dodaj_absorbery(indeksy_pozycji gdzie_absorbery){
+		ASSERT_Z_ERROR_MSG(config::absorbcja, "Tego w tym configu nie wolamy\n");
+
 		indeksy_absorbowane.malloc(gdzie_absorbery.size());
 		for(uint64_t i = 0; i < gdzie_absorbery.size(); i++){
 			indeks_pozycji gdzie = gdzie_absorbery[i];
@@ -222,6 +236,22 @@ struct dane_trwale{ //operatory, to gdzie wysy³aæ, przestrzen, raczej nie zmieni
 				ASSERT_Z_ERROR_MSG(indeks_absorbowany != indeksy_absorbowane[j], "Wierzcholkek %d, i kubelek %d sa juz absorbowane\n" SEP gdzie.index_wierzcholka SEP gdzie.index_w_wierzcholku);
 			}
 			indeksy_absorbowane[i] = (idW_t)indeks_absorbowany;
+		}
+	}
+
+	__host__ void dodaj_mierniki(indeksy_pozycji gdzie_mierniki) {
+		ASSERT_Z_ERROR_MSG(config::mierzenie_rozproszone, "Tego w tym configu nie wolamy\n");
+
+		indeksy_mierzone.malloc(gdzie_mierniki.size());
+		for (uint64_t i = 0; i < gdzie_mierniki.size(); i++) {
+			indeks_pozycji gdzie = gdzie_mierniki[i];
+			wierzcholek& w = wierzcholki[gdzie.index_wierzcholka];
+			ASSERT_Z_ERROR_MSG(w.liczba_kierunkow > gdzie.index_w_wierzcholku, "Wierzcholek nie ma tylu polaczen\n");
+			uint64_t indeks_mierzony = w.start_wartosci + (uint64_t)gdzie.index_w_wierzcholku;
+			for (uint64_t j = 0; j < i; j++) {
+				ASSERT_Z_ERROR_MSG(indeks_mierzony != indeksy_mierzone[j], "Wierzcholkek %d, i kubelek %d sa juz mierzone\n" SEP gdzie.index_wierzcholka SEP gdzie.index_w_wierzcholku);
+			}
+			indeksy_mierzone[i] = (idW_t)indeks_mierzony;
 		}
 	}
 
@@ -313,7 +343,7 @@ struct dane_iteracji{
 	}
 
 	__host__ typ_prawdopodobienstwa prawdopodobienstwo_suma() const {
-		typ_prawdopodobienstwa suma = 0.0;
+		typ_prawdopodobienstwa suma = zero(double());
 		for (uint64_t i = 0; i < wartosci.rozmiar; i++) {
 			suma += P(wartosci[i]);
 		}
@@ -444,7 +474,7 @@ struct spacer_losowy{
 	}
 
 	__host__ void iteracja_na_cpu(){
-		// nie musi korzystac ze znajdywacza wierzcholka w tak jak watki
+		// nie musi korzystac ze znajdywacza wierzcholka tak jak watki
 		spacer::dane_iteracji<towar>* iteracja_z = &iteracjaA;
 		spacer::dane_iteracji<towar>* iteracja_do = &iteracjaB;
 		if(A == false){
@@ -505,6 +535,8 @@ struct spacer_losowy{
 
 	// najpierw iteracja
 	__host__ void absorbuj_na_cpu(double procent_absorbowany = 1.0){
+		ASSERT_Z_ERROR_MSG(config::absorbcja, "Tego w tym configu nie wolamy\n");
+
 		spacer::dane_iteracji<towar>* iteracja_z = &iteracjaA;
 		spacer::dane_iteracji<towar>* iteracja_do = &iteracjaB;
 		if (A == false) {
@@ -528,7 +560,45 @@ struct spacer_losowy{
 		}
 	}
 
+	// najpierw iteracja
+	__host__ void mierz_na_cpu() {
+		ASSERT_Z_ERROR_MSG(config::mierzenie_rozproszone, "Tego w tym configu nie wolamy\n");
+
+		spacer::dane_iteracji<towar>* iteracja_z = &iteracjaA;
+		spacer::dane_iteracji<towar>* iteracja_do = &iteracjaB;
+		if (A == false) {
+			iteracja_z = &iteracjaB;
+			iteracja_do = &iteracjaA;
+		}
+
+		for (uint64_t i = 0; i < trwale.liczba_miernikow(); i++) {
+			uint64_t indeks_mierzony = trwale.indeksy_mierzone[i];
+			
+			//fp_typ losowe = losowosc_globalna::losowa_przecinkowa();
+			towar& mierzone = iteracja_do->wartosci[indeks_mierzony];
+			fp_typ prawdopodp = P(mierzone);
+
+			
+			fp_typ cale = floor(prawdopodp);
+			fp_typ pozostale = prawdopodp - cale;
+
+			fp_typ losowe = abs(mierzone.Re) / sqrt(pozostale);
+			if(prawdopodp < 1e-8){
+				losowe = jeden(fp_typ());
+			}
+
+			if(pozostale >= losowe) {
+				mierzone *= NORMA(prawdopodp, cale + jeden(fp_typ()), towar());
+				//__debugbreak();
+			} else {
+				mierzone = jeden(towar()) * cale;
+			}
+		}
+	}
+
 	__host__ void policz_wspolczynnik_normalizacji(){
+		ASSERT_Z_ERROR_MSG(config::normalizacja, "Tego w tym configu nie wolamy\n");
+
 		spacer::dane_iteracji<towar>* iteracja_z = &iteracjaA;
 		spacer::dane_iteracji<towar>* iteracja_do = &iteracjaB;
 		if (A == false) {
@@ -571,6 +641,8 @@ struct spacer_losowy{
 	}
 
 	__HD__ void nie_normalizuj(){
+		ASSERT_Z_ERROR_MSG(config::normalizacja, "Tego w tym configu nie wolamy\n");
+
 		spacer::dane_iteracji<towar>* iteracja_z = &iteracjaA;
 		spacer::dane_iteracji<towar>* iteracja_do = &iteracjaB;
 		if (A == false) {
@@ -594,6 +666,19 @@ struct spacer_losowy{
 			//iteracjaB.norma_poprzedniej_iteracji = 1.0;
 		}
 		A = !A;
+	}
+
+	void reset(){
+		// Tworzy stan pusty a nie pocz¹tkowy
+		for (uint64_t i = 0; i < iteracje_zapamietane.rozmiar; i++) {
+			spacer::dane_iteracji<towar>* ptr = iteracje_zapamietane[i];
+			delete (ptr);
+		}
+		iteracje_zapamietane.resize(0);
+		if (lokalizacja_na_device != nullptr) zburz_na_cuda();
+		A = true;
+		iteracjaA.zeruj();
+		iteracjaA.czas = 0.0f;
 	}
 
 	~spacer_losowy(){
@@ -719,6 +804,9 @@ __host__ void test_funkcji_tworzacych_spacery_2(transformata T, transformata bok
 //template <typename towar, typename transformata>
 //__global__ void iteracje_na_gpu(spacer_losowy<towar, transformata>* lokalizacja_na_device, uint64_t ile_blokow, uint64_t liczba_iteracji = 1, uint64_t ile_prac_wykonac = 1);
 
+template<typename towar, typename transformata>
+__host__ spacer_losowy<towar, transformata> spacer_linia_2_czastki(
+	uint32_t liczba_wierzcholkow, transformata T_te_same_pozycje, transformata T_rozne_pozycje, graf* linia_tensorowana = nullptr);
 
 constexpr int max_ilosc_watkow_w_bloku = 100;
 

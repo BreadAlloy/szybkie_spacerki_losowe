@@ -20,15 +20,15 @@ _ACRTIMP void __cdecl _wassert(
     _In_   unsigned       _Line
 );
 
-#define lepszy_assert(expression) (void)(                                                       \
+#define spacer_assert(expression) (void)(                                                       \
             (!!(expression)) ||                                                              \
             (_wassert(_CRT_WIDE(#expression), _CRT_WIDE(__FILE__), (unsigned)(__LINE__)), 0) \
         )
 
 #define SEP ,
-#define ASSERT_Z_ERROR_MSG(warunek, wiadomosc) if(!(warunek)) {printf(wiadomosc); lepszy_assert(false); }
+#define ASSERT_Z_ERROR_MSG(warunek, wiadomosc) if(!(warunek)) {printf(wiadomosc); spacer_assert(false); }
 
-#define ASSERT_Z_INSTRUKCJA(warunek, instrukcja) if(!(warunek)) {instrukcja assert(false); }
+#define ASSERT_Z_INSTRUKCJA(warunek, instrukcja) if(!(warunek)) {instrukcja spacer_assert(false); }
 
 //wiadomoœæ mo¿e byæ z formatem po przecinku tylko wtedy trzeba SEP u¿yæ na wyra¿eniu
 

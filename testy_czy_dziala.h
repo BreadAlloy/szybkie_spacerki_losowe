@@ -1,7 +1,7 @@
 #pragma once
 
 #undef IM_ASSERT
-#define IM_ASSERT(_EXPR)  lepszy_assert(_EXPR)
+#define IM_ASSERT(_EXPR)  spacer_assert(_EXPR)
 #include "imgui_internal.h"
 
 #include "spacer_losowy.h"
@@ -1172,4 +1172,145 @@ struct test_absorbcji {
 	}
 };
 
+struct zabawy_dowolne {
+	std::vector<grafika*> grafiki_iteracji;
+	std::string nazwa_okna;
 
+	uint32_t height = 0;
+	uint32_t width = 0;
+
+	double ostatni_czas_odswiezenia = glfwGetTime();
+	float okres_pokazu_slajdow = 1.0f;
+
+	int pokazywana_grafika = 0;
+	float skala_obrazu = 1.0f;
+	float wzmocnienie = 1.0f;
+
+	std::vector<double> prawdopodop;
+	std::vector<double> czasy;
+
+	static constexpr uint32_t skalar_instancji = 1;
+	static constexpr uint32_t liczba_wierzcholkow_boku = 100 * skalar_instancji + 1;
+	static constexpr uint32_t liczba_iteracji = 200 * skalar_instancji;
+	static constexpr uint32_t jak_czesto_zapisac = 1 * skalar_instancji;
+
+	graf przestrzen;
+	spacer_losowy<zesp, TMDQ> spacer;
+
+	__host__ zabawy_dowolne()
+		: nazwa_okna("Test spaceru kwantowego dyskretny GPU")
+		, przestrzen(graf_krata_2D(liczba_wierzcholkow_boku))
+		, spacer(spacer_krata_2D<zesp, TMDQ>(liczba_wierzcholkow_boku, Fourier_4, I_4, &przestrzen)) {
+
+		spacer.iteracjaA[spacer.trwale.wierzcholki[(liczba_wierzcholkow_boku * liczba_wierzcholkow_boku) / 2].start_wartosci] = zero(zesp());
+		spacer.iteracjaA[spacer.trwale.wierzcholki[(liczba_wierzcholkow_boku * liczba_wierzcholkow_boku) / 2 + 5].start_wartosci] = (zesp(1.0, 1.0) / std::sqrt(2.0)) * 2.0;
+		//spacer.iteracjaA[spacer.trwale.wierzcholki[((liczba_wierzcholkow_boku * liczba_wierzcholkow_boku) / 2) + 1].start_wartosci + 2] = jeden(zesp()) / std::sqrt(2.0);
+
+		spacer::indeksy_pozycji pozycje_miernikow;
+		for (uint64_t i = 0; i < liczba_wierzcholkow_boku; i++) {
+			pozycje_miernikow.push_back(spacer::indeks_pozycji(liczba_wierzcholkow_boku * i + (liczba_wierzcholkow_boku - 1), 0));
+		}
+
+		spacer.trwale.dodaj_mierniki(pozycje_miernikow);
+		policz_cpu();
+		przygotuj_grafiki();
+	}
+
+	void policz_cpu(){
+		printf("CPU start\n");
+		for(uint32_t i = 0; i < liczba_iteracji; i++){
+			spacer.iteracja_na_cpu();
+			spacer.mierz_na_cpu();
+			if (i % jak_czesto_zapisac == 0) {
+				spacer.zapisz_iteracje();
+			}
+			spacer.dokoncz_iteracje(dt);
+
+		}
+
+		printf("CPU koniec\n");
+	}
+
+	void policz_gpu(){
+		printf("CUDA start\n");
+		spacer.zbuduj_na_cuda();
+
+		proste_iteracje_na_gpu<zesp, TMDQ>(spacer, 1.0, liczba_iteracji, 70, 300, jak_czesto_zapisac);
+
+		spacer.zburz_na_cuda();
+		printf("CUDA koniec\n");
+	}
+
+	__host__ uint64_t liczba_zapamietanych_iteracji() {
+		return spacer.iteracje_zapamietane.rozmiar;
+	}
+
+	__host__ void przygotuj_grafiki(uint64_t rozmiar_przed = -1UL) {
+		height = (uint32_t)std::sqrt(spacer.trwale.liczba_wierzcholkow());
+		width = (uint32_t)std::sqrt(spacer.trwale.liczba_wierzcholkow());
+		ASSERT_Z_ERROR_MSG(height * width == spacer.trwale.liczba_wierzcholkow(), "Tego spaceru nie da sie przedstawic jako kwadrat\n");
+
+		if(rozmiar_przed == -1UL) rozmiar_przed = grafiki_iteracji.size();
+		grafiki_iteracji.resize(liczba_zapamietanych_iteracji());
+		prawdopodop.resize(liczba_zapamietanych_iteracji());
+		czasy.resize(liczba_zapamietanych_iteracji());
+
+		for (uint64_t i = rozmiar_przed; i < spacer.iteracje_zapamietane.rozmiar; i++) {
+			spacer::dane_iteracji<zesp>& iteracja = *(spacer.iteracje_zapamietane[i]);
+			grafiki_iteracji[i] = grafika_P_kierunkow_dla_kraty_2D(spacer, iteracja,
+				width, height, &(prawdopodop[i]), wzmocnienie);
+			czasy[i] = iteracja.czas;
+		}
+	}
+
+	__host__ void display_image(ImGuiIO&) {
+		grafika* G = grafiki_iteracji[pokazywana_grafika];
+		ImGui::Text("t = %lf", spacer.iteracje_zapamietane[pokazywana_grafika]->czas);
+		ImGui::SliderFloat("Okres pokazu slajdow(1.0 to brak pokazu)", &okres_pokazu_slajdow, 0.01f, 1.0f);
+		ImGui::SliderFloat("Wzmocnienie", &wzmocnienie, 1.0f, 10.0f);
+		if (ImGui::Button("Policz grafiki")) {
+			przygotuj_grafiki(0);
+		}
+
+		plot_spacer_dla_kraty_2D(spacer, pokazywana_grafika, przestrzen, G, width, height, skala_obrazu, "spacer");
+
+		if (okres_pokazu_slajdow < 0.95f) {
+			double czas = glfwGetTime();
+			if (czas > (ostatni_czas_odswiezenia + (double)okres_pokazu_slajdow)) {
+				ostatni_czas_odswiezenia = czas;
+				pokazywana_grafika = (pokazywana_grafika + 1) % grafiki_iteracji.size();
+			}
+		}
+		else {
+			ostatni_czas_odswiezenia = glfwGetTime();
+		}
+	}
+
+	__host__ void pokaz_wykresy(ImGuiIO&) {
+		if (ImPlot::BeginPlot("##Dane w spacerze", ImVec2(skala_obrazu * 200.0f, skala_obrazu * 200.0f))) {
+			ImPlot::PlotInfLines("Vertical pomocnik", &czasy[pokazywana_grafika], 1);
+			ImPlot::PlotLine("Prawdopodobienstwa suma", czasy.data(), prawdopodop.data(), (int)liczba_zapamietanych_iteracji());
+			ImPlot::EndPlot();
+		}
+	}
+
+	__host__ void pokaz_okno(ImGuiIO& io) {
+		ImGui::Begin(nazwa_okna.c_str());
+		ImGui::SliderFloat("Rozmiar grafiki", &skala_obrazu, 0.0f, 10.0f);
+		ImGui::SliderInt("Ktora grafika jest pokazywana", &pokazywana_grafika, 0, (int)liczba_zapamietanych_iteracji() - 1);
+		if(ImGui::Button("Policz wiecej")){
+			policz_cpu();
+			przygotuj_grafiki();
+		}
+		display_image(io);
+		ImGui::SameLine();
+		pokaz_wykresy(io);
+		ImGui::End();
+	}
+
+	__host__ ~zabawy_dowolne() {
+		for (auto g : grafiki_iteracji) {
+			delete g;
+		}
+	}
+};

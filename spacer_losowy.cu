@@ -135,9 +135,10 @@ __global__ void iteracja_na_gpu(spacer::dane_trwale<transformata>* trwale, space
 template <typename towar, typename transformata>
 __global__ void absorbuj_na_gpu(spacer::dane_trwale<transformata>* trwale, spacer::dane_iteracji<towar>* iteracja_z, spacer::dane_iteracji<towar>* iteracja_do, double procent_absorbowany,
 	przydzielacz_prac przydzial){
+	ASSERT_Z_ERROR_MSG(config::absorbcja, "Tego w tym configu nie wolamy\n");
 
-	double norma_zabranego = NORMA(1.0, procent_absorbowany, towar()); // nie jest inline
-	double norma_pozostawionego = NORMA(1.0, 1.0 - procent_absorbowany, towar()); // nie jest inline
+	double norma_zabranego = NORMA(1.0, procent_absorbowany, towar());
+	double norma_pozostawionego = NORMA(1.0, 1.0 - procent_absorbowany, towar());
 
 	for (uint64_t j = 0; j < przydzial.ile_prac; j++) {
 		uint64_t index_pracownika = przydzial.index_pracownika(j, threadIdx.x, blockIdx.x);
@@ -154,6 +155,7 @@ __global__ void absorbuj_na_gpu(spacer::dane_trwale<transformata>* trwale, space
 
 template <typename towar>
 __global__ void policz_wspolczynnik_normalizacji(spacer::dane_iteracji<towar>* iteracja_z, spacer::dane_iteracji<towar>* iteracja_do, double poczatkowe_prawdopodobienstwo = 1.0) { //na jeden watek w jednym bloku
+	ASSERT_Z_ERROR_MSG(config::normalizacja, "Tego w tym configu nie wolamy\n");
 	iteracja_do->zaabsorbowane_poprzedniej += iteracja_do->zaabsorbowane_poprzedniej;
 	double powinno_byc = poczatkowe_prawdopodobienstwo - iteracja_do->zaabsorbowane_poprzedniej;
 	iteracja_do->norma_poprzedniej_iteracji = NORMA(iteracja_do->prawdopodobienstwo_poprzedniej, powinno_byc, towar());
@@ -193,6 +195,8 @@ __host__ void iteracje_na_gpu(spacer_losowy<towar, transformata>& spacer, double
 
 		iteracja_na_gpu<towar, transformata>start_kernel(przydzielacz_iteracja, 0, spacer.stream_iteracja)(
 			trwale, iteracja_z, iteracja_do, przydzielacz_iteracja);
+
+		if (config::normalizacja){
 		if(i % co_ile_normalizuj == 0) {
 			sumator_P.sumuj(spacer.iteracja_z()->wartosci, &(iteracja_do->prawdopodobienstwo_poprzedniej), spacer.stream_normalizacja);
 			sumator.sumuj(spacer.iteracja_z()->wartosci_zaabsorbowane, &(iteracja_do->zaabsorbowane_poprzedniej), spacer.stream_normalizacja);
@@ -200,10 +204,13 @@ __host__ void iteracje_na_gpu(spacer_losowy<towar, transformata>& spacer, double
 		} else {
 			nie_normalizuj<towar><<<1, 1, 0, spacer.stream_normalizacja>>>(iteracja_z, iteracja_do);
 		}
+		}
+
 		if(i % co_ile_zapisac == 0){
 			spacer.zapisz_iteracje_z_cuda();
 		}
 
+		if(config::absorbcja) {
 		if(i % co_ile_absorbuj == 0){
 			absorbuj_na_gpu<towar, transformata>start_kernel(przydzielacz_absorbcja, 0, spacer.stream_iteracja)(
 				trwale, iteracja_z, iteracja_do, 1.0, przydzielacz_absorbcja);
@@ -211,11 +218,13 @@ __host__ void iteracje_na_gpu(spacer_losowy<towar, transformata>& spacer, double
 			absorbuj_na_gpu<towar, transformata>start_kernel(przydzielacz_absorbcja, 0, spacer.stream_iteracja)(
 				trwale, iteracja_z, iteracja_do, 0.0, przydzielacz_absorbcja);
 		}
+		}
+
 		spacer.dokoncz_iteracje(delta_t);
 		zakoncz_iteracje<towar, transformata><<<1, 1, 0, spacer.stream_iteracja>>>(iteracja_do, spacer.iteracja_z()->czas);
 
 		sprawdzCudaErrors(cudaStreamSynchronize(spacer.stream_iteracja));
-		sprawdzCudaErrors(cudaStreamSynchronize(spacer.stream_normalizacja));
+		if(config::normalizacja) sprawdzCudaErrors(cudaStreamSynchronize(spacer.stream_normalizacja));
 		sprawdzCudaErrors(cudaStreamSynchronize(spacer.stream_pamiec_operacje));
 		sprawdzCudaErrors(cudaGetLastError());
 

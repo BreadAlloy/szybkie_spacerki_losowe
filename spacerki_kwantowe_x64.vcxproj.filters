@@ -254,6 +254,9 @@
     <ClInclude Include="spacer_config.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="spojrzenie_2_czastki.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="szybki_kalkulator.cu" />
@@ -264,5 +267,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="algorytm_szybkiego_spacerku_losowego.md" />
+    <None Include="packages.config" />
   </ItemGroup>
 </Project>
