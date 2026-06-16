@@ -40,7 +40,7 @@ __host__ std::string do_bin(const zesp& X) {
 
 template<typename towar>
 __host__ void pokaz_transformate(transformata_macierz<towar>& op) {
-	ImGui::Text("Transformata:");
+	//ImGui::Text("Transformata:");
 
 	ImGuiTableFlags flags = ImGuiTableFlags_SizingStretchSame | ImGuiTableFlags_Resizable | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersV | ImGuiTableFlags_ContextMenuInBody;
 

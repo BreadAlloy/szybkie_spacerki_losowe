@@ -61,7 +61,7 @@ int main(int argc, char** argv)
     //test_absorbcji TA;
     //zabawy_dowolne ZD;
 
-    spojrzenie_2_czastki::linia_TMDQ S2CLQ;
+    spojrzenie_2_czastki::przegladacz_instancji S2CLQ;
 
     //test_funkcji_tworzacych_grafy();
     //test_ortonormalizacji();
@@ -101,7 +101,7 @@ int main(int argc, char** argv)
         //przegladacz.pokaz_okno();
         //zderzenie.pokaz_okno();
         //ZD.pokaz_okno(*io);
-        S2CLQ.pokaz_okno();
+        S2CLQ.tick();
 
         //processInput(window); // z grafiki
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // czesciowo z grafiki
