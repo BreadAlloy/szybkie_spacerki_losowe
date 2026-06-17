@@ -4,6 +4,19 @@
 
 #include "spacer_config.h"
 
+constexpr inline __HD__ fp_t zero(fp_t) {
+	return ((fp_t)0.0);
+}
+
+#undef FP_ZERO
+#define FP_ZERO zero(fp_t())
+
+constexpr inline __HD__ fp_t jeden(fp_t) {
+	return ((fp_t)1.0);
+}
+
+#define FP_JEDEN jeden(fp_t())
+
 #ifdef NDEBUG
 	#undef NDEBUG
 	#include <cassert>  // asserty w trybie z debugiem
