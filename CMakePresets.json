@@ -1,0 +1,78 @@
+{
+    "version": 3,
+    "configurePresets": [
+        {
+            "name": "wspolne",
+            "hidden": true,
+            "binaryDir": "${sourceDir}/out/build/${presetName}",
+            "installDir": "${sourceDir}/out/install/${presetName}"
+        },
+        {
+            "name": "debug",
+            "hidden": true,
+            "inherits": "wspolne",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug"
+            }
+        },
+        {
+            "name": "release",
+            "hidden": true,
+            "inherits": "wspolne",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release"
+            }
+        },
+        {
+            "name": "windows-base",
+            "hidden": true,
+            "generator": "Ninja",
+            "cacheVariables": {
+                "CMAKE_C_COMPILER": "cl.exe",
+                "CMAKE_CXX_COMPILER": "cl.exe"
+            },
+            "condition": {
+                "type": "equals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Windows"
+            },
+            "architecture": {
+                "value": "x64",
+                "strategy": "external"
+            }
+        },
+        {
+            "name": "unix-base",
+            "hidden": true,
+            "condition": {
+                "type": "notEquals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Windows"
+            },
+            "architecture": {
+                "value": "x64",
+                "strategy": "external"
+            }
+        },
+        {
+            "name": "windows-debug",
+            "displayName": "Debug",
+            "inherits": ["windows-base", "debug"]
+        },
+        {
+            "name": "windows-release",
+            "displayName": "Release",
+            "inherits": ["windows-base", "release"]
+        },
+        {
+            "name": "unix-debug",
+            "displayName": "Debug",
+            "inherits": ["unix-base", "debug"]
+        },
+        {
+            "name": "unix-release",
+            "displayName": "Release",
+            "inherits": ["unix-base", "release"]
+        }
+    ]
+}
