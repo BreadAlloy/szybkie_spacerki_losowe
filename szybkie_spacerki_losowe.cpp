@@ -9,24 +9,21 @@
 
 #include "graf.h"
 #include "spacer_losowy.h"
-
 #include "transformaty_wyspecializowane.h"
 
-#include "pomocne_funkcje.h"
+//#include "spacer_2D_wizualizacja.h"
 
-#include "spacer_2D_wizualizacja.h"
-
-#include "testy_czy_dziala.h"
+//#include "testy_czy_dziala.h"
 
 #include "spojrzenie_2_czastki.h"
 
-#include "alg_liniowa.h"
+//#include "alg_liniowa.h"
 
-#include "zadanie.h"
+//#include "zadanie.h"
 
-#include "przejrzenie_reczne.h"
+//#include "przejrzenie_reczne.h"
 
-#include "eksperyment.h"
+//#include "eksperyment.h"
 
 // Main code
 int main(int argc, char** argv)

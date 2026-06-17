@@ -6,9 +6,6 @@
 
 #include "pomocne_funkcje.h"
 
-typedef uint32_t ID_W; // typ indeksowania wierzcholków
-typedef uint8_t ID_K;  // typ indeksowania kube³ków
-
 namespace grafowe { //rzeczy potrzebne do definicji grafu
 
 	struct krawedz { // skierowana
@@ -152,7 +149,9 @@ struct graf {
 	std::vector<grafowe::wierzcholek> wierzcholki;
 	std::vector<grafowe::krawedz> krawedzie; // skierowane
 
-	graf(ID_W liczba_wierzcholkow = 0){
+	graf(size_t liczba_wierzcholkow = 0){
+		ASSERT_Z_ERROR_MSG(liczba_wierzcholkow < (size_t)std::numeric_limits<ID_W>::max(), "ID_W typ za ma³y na ten graf\n");
+
 		// na pocz¹tku dla ka¿dego wierzcho³ka liczba po³¹czeñ wynosi 0.
 		wierzcholki.resize(liczba_wierzcholkow);
 	}
@@ -358,6 +357,7 @@ struct graf {
 	}
 
 	bool czy_gotowy() const{
+		ASSERT_Z_ERROR_MSG(wierzcholki.size() < (size_t)std::numeric_limits<ID_W>::max(), "ID_W typ za ma³y na ten graf\n");
 		bool ret = true;
 		for(auto& w : wierzcholki){
 			ret &= w.czy_wszystko_polaczone();

@@ -26,7 +26,7 @@ uint32_t liczba_wierzcholkow, transformata T, transformata boki, graf* linia) {
 	return spacer;
 }
 
-template __host__ spacer_losowy<double, TMDK> spacer_linia(
+template __host__ spacer_losowy<fp_t, TMDK> spacer_linia(
 	uint32_t liczba_wierzcholkow, TMDK T, TMDK boki, graf* linia);
 
 template __host__ spacer_losowy<zesp, TMDQ> spacer_linia(
@@ -75,7 +75,7 @@ graf* krata) {
 	return spacer;
 }
 
-template __host__ spacer_losowy<double, TMDK> spacer_krata_2D(
+template __host__ spacer_losowy<fp_t, TMDK> spacer_krata_2D(
 	uint32_t liczba_wierzcholkow_boku, TMDK T, TMDK boki,
 	graf* krata);
 
@@ -162,14 +162,14 @@ __host__ void test_funkcji_tworzacych_spacery_2(transformata T, transformata bok
 	}
 }
 
-template __host__ void test_funkcji_tworzacych_spacery_2<double, TMDK>(TMDK T, TMDK bok);
+template __host__ void test_funkcji_tworzacych_spacery_2<fp_t, TMDK>(TMDK T, TMDK bok);
 
-template __host__ void test_funkcji_tworzacych_spacery<double, TMDK>(TMDK T, TMDK bok);
+template __host__ void test_funkcji_tworzacych_spacery<fp_t, TMDK>(TMDK T, TMDK bok);
 
 //void test4(){}
 
-//template __host__ spacer::uklad_transformat<transformata_macierz<double>> uklad_transformat_dla_lini<transformata_macierz<double>>(uint32_t liczba_wierzcholkow, transformata_macierz<double>& srodek, transformata_macierz<double>& koniec);
-//template __host__ spacer::uklad_transformat<transformata> uklad_transformat_dla_lini<transformata_macierz<double>>(uint32_t liczba_wierzcholkow, transformata& srodek, transformata& koniec);
+//template __host__ spacer::uklad_transformat<transformata_macierz<fp_t>> uklad_transformat_dla_lini<transformata_macierz<fp_t>>(uint32_t liczba_wierzcholkow, transformata_macierz<fp_t>& srodek, transformata_macierz<fp_t>& koniec);
+//template __host__ spacer::uklad_transformat<transformata> uklad_transformat_dla_lini<transformata_macierz<fp_t>>(uint32_t liczba_wierzcholkow, transformata& srodek, transformata& koniec);
 
 
 

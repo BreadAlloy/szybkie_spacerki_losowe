@@ -2,6 +2,9 @@
 
 #include "definicje_typowych_macierzy.h"
 
+#pragma warning( disable : 4244 ) // possible loss of data | Nie chce wszedzie pisac fp_t
+#pragma warning( disable : 4838 ) // requires a narrowing conversion | Nie chce wszedzie pisac fp_t
+
 //					         HADAMARD 2x2
 zesp dane_hadamard[4] = { 1.0 / std::sqrt(2.0), 1.0 / std::sqrt(2.0),
 						  1.0 / std::sqrt(2.0), -1.0 / std::sqrt(2.0) };
@@ -23,7 +26,8 @@ zesp dane_pauli_y[4] = { 0.0, zesp(0.0, -1.0),
 const transformata_macierz<zesp> Y(2, dane_pauli_y);
 
 //							IDENTYCZNOSCI
-const transformata_macierz<zesp> I_1(1.0);
+zesp dane_I_1[1] = { 1.0 };
+const transformata_macierz<zesp> I_1(1.0, dane_I_1);
 //-------------------------------------------------------------
 zesp dane_I_2[4] = { 1.0, 0.0,
 					 0.0, 1.0 };
@@ -77,3 +81,8 @@ zesp dane_CX[16] = { 1.0, 0.0, 0.0, 0.0,
 					  0.0, 0.0, 0.0, 1.0,
 					  0.0, 0.0, 1.0, 0.0 };
 const transformata_macierz<zesp> CX(4, dane_CX);
+
+#pragma warning( default : 4244 )
+#pragma warning( default : 4838 )
+
+

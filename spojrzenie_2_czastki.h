@@ -8,6 +8,8 @@
 
 #include "definicje_typowych_macierzy.h"
 
+#include "alg_liniowa.h"
+
 #include "screenshot.h"
 
 namespace spojrzenie_2_czastki{
@@ -27,20 +29,22 @@ struct linia_TMDQ{
 	float skala_obrazu = 1.0f;
 	float wzmocnienie = 1.0f;
 
-	std::vector<double> prawdopodop;
-	std::vector<double> czasy;
+	std::vector<prob_t> prawdopodop;
+	std::vector<fp_t> czasy;
 
-	std::vector<statyczny_wektor<double>> prawdopodob_wysladowane_1;
-	std::vector<statyczny_wektor<double>> prawdopodob_wysladowane_2;
+	std::vector<statyczny_wektor<prob_t>> prawdopodob_wysladowane_1;
+	std::vector<statyczny_wektor<prob_t>> prawdopodob_wysladowane_2;
 
-	static constexpr uint32_t skalar_instancji = 1;
+	static constexpr uint32_t skalar_instancji = 2;
 	static constexpr uint32_t liczba_wierzcholkow = 100 * skalar_instancji + 1;
 
 	static constexpr uint32_t pozycja_poczatkowa_1 = 5 * skalar_instancji;
 	static constexpr uint32_t pozycja_poczatkowa_2 = 95 * skalar_instancji;
 
 	static constexpr uint32_t liczba_iteracji = 2000 * skalar_instancji;
+	//static constexpr uint32_t liczba_iteracji = 1000;
 	static constexpr uint32_t jak_czesto_zapisac = 1 * skalar_instancji; //* skalar_instancji;
+	//static constexpr uint32_t jak_czesto_zapisac = liczba_iteracji - 1; //* skalar_instancji;
 
 	TMDQ transformata_pole = H;
 	TMDQ transformata_oddzialywanie = HxH;//Fourier_4;
@@ -122,11 +126,11 @@ struct linia_TMDQ{
 		return spacer().iteracje_zapamietane.rozmiar;
 	}
 
-	__host__ void przygotuj_grafiki(uint64_t rozmiar_przed = -1UL) {
+	__host__ void przygotuj_grafiki(uint64_t rozmiar_przed = std::numeric_limits<uint64_t>::max()) {
 		ASSERT_Z_ERROR_MSG(liczba_wierzcholkow * liczba_wierzcholkow ==
 		spacer().trwale.liczba_wierzcholkow(), "Tego spaceru nie da sie przedstawic jako kwadrat\n");
 
-		if (rozmiar_przed == -1UL) rozmiar_przed = grafiki_2_czastki.size();
+		if (rozmiar_przed == std::numeric_limits<uint64_t>::max()) rozmiar_przed = grafiki_2_czastki.size();
 		grafiki_2_czastki.resize(liczba_zapamietanych_iteracji());
 		grafiki_2_czastki_1.resize(liczba_zapamietanych_iteracji());
 		grafiki_2_czastki_2.resize(liczba_zapamietanych_iteracji());
@@ -146,8 +150,8 @@ struct linia_TMDQ{
 			grafiki_2_czastki[i] = grafika_P_kierunkow_dla_kraty_2D(spacer(), *iteracja,
 				liczba_wierzcholkow, liczba_wierzcholkow, &(prawdopodop[i]), wzmocnienie);
 
-			statyczny_wektor<double>& wypelniany1 = prawdopodob_wysladowane_1[i];
-			statyczny_wektor<double>& wypelniany2 = prawdopodob_wysladowane_2[i];
+			statyczny_wektor<prob_t>& wypelniany1 = prawdopodob_wysladowane_1[i];
+			statyczny_wektor<prob_t>& wypelniany2 = prawdopodob_wysladowane_2[i];
 			for(uint32_t j = 0; j < wypelniany1.rozmiar; j++){
 				wypelniany1[j] = 0.0;
 				wypelniany2[j] = 0.0;
@@ -159,7 +163,7 @@ struct linia_TMDQ{
 				.wierzcholki[y * liczba_wierzcholkow + x];
 
 				for(uint8_t k = 0; k < W.liczba_kierunkow; k++){
-					double PP = P(iteracja->wartosci[W.start_wartosci + k]);
+					prob_t PP = P(iteracja->wartosci[W.start_wartosci + k]);
 
 					wypelniany1[spacer_1_czastka1.trwale.wierzcholki[y].start_wartosci + ((k >> 1) & 1)] += PP;
 					wypelniany2[spacer_1_czastka2.trwale.wierzcholki[x].start_wartosci + (k & 1)] += PP;
@@ -279,8 +283,8 @@ struct linia_TMDQ{
 		spacer_1_czastka1.iteracjaA[spacer_1_czastka1.trwale.wierzcholki[liczba_wierzcholkow / 2].start_wartosci] = zero(zesp());
 		spacer_1_czastka2.iteracjaA[spacer_1_czastka2.trwale.wierzcholki[liczba_wierzcholkow / 2].start_wartosci] = zero(zesp());
 
-		spacer_1_czastka1.iteracjaA[spacer_1_czastka1.trwale.wierzcholki[pozycja_poczatkowa_1].start_wartosci] = (zesp(1.0, 1.0) / std::sqrt(2.0));
-		spacer_1_czastka2.iteracjaA[spacer_1_czastka2.trwale.wierzcholki[pozycja_poczatkowa_2].start_wartosci + 1] = (zesp(1.0, 1.0) / std::sqrt(2.0));
+		spacer_1_czastka1.iteracjaA[spacer_1_czastka1.trwale.wierzcholki[pozycja_poczatkowa_1].start_wartosci] = (zesp(1.0, 1.0) / std::sqrt(fp_t(2.0)));
+		spacer_1_czastka2.iteracjaA[spacer_1_czastka2.trwale.wierzcholki[pozycja_poczatkowa_2].start_wartosci + 1] = (zesp(1.0, 1.0) / std::sqrt(fp_t(2.0)));
 
 		spacer_2_czastki.iteracjaA[0] = zero(zesp());
 		spacer_2_czastki.iteracjaA[spacer_2_czastki.trwale.wierzcholki[

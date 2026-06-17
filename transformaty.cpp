@@ -4,14 +4,14 @@
 
 #include "spacer_losowy.h"
 
-__host__ std::string do_bin(const double& X) {
+__host__ std::string do_bin(const fp_t& X) {
 	constexpr int ile_miejsca = 50;
 	char buff[ile_miejsca];
 	if (X == 0.0) {
-		ASSERT_Z_ERROR_MSG(std::sprintf(buff, "%.1lf", X) < ile_miejsca, "Za malo miejsca w bufforze\n");
+		ASSERT_Z_ERROR_MSG(std::sprintf(buff, "%.1" FP_F "", X) < ile_miejsca, "Za malo miejsca w bufforze\n");
 	}
 	else {
-		ASSERT_Z_ERROR_MSG(std::sprintf(buff, "%.17lf", X) < ile_miejsca, "Za malo miejsca w bufforze\n");
+		ASSERT_Z_ERROR_MSG(std::sprintf(buff, "%" FP_POS_F "", X) < ile_miejsca, "Za malo miejsca w bufforze\n");
 	}
 	return buff;
 }
@@ -20,18 +20,18 @@ __host__ std::string do_bin(const zesp& X) {
 	constexpr int ile_miejsca = 100;
 	char buff[ile_miejsca];
 	if (X.Re == 0.0 && X.Im == 0.0) {
-		ASSERT_Z_ERROR_MSG(std::sprintf(buff, "%.1lf + i%.1lf", X.Re, X.Im) < ile_miejsca, "Za malo miejsca w bufforze\n");
+		ASSERT_Z_ERROR_MSG(std::sprintf(buff, "%.1" FP_F " + i%.1" FP_F "", X.Re, X.Im) < ile_miejsca, "Za malo miejsca w bufforze\n");
 	}
 	else {
 		if (X.Re == 0.0) {
-			ASSERT_Z_ERROR_MSG(std::sprintf(buff, "%.1lf + i%.17lf", X.Re, X.Im) < ile_miejsca, "Za malo miejsca w bufforze\n");
+			ASSERT_Z_ERROR_MSG(std::sprintf(buff, "%.1" FP_F " + i%" FP_POS_F "", X.Re, X.Im) < ile_miejsca, "Za malo miejsca w bufforze\n");
 		}
 		else {
 			if (X.Im == 0.0) {
-				ASSERT_Z_ERROR_MSG(std::sprintf(buff, "%.17lf + i%.1lf", X.Re, X.Im) < ile_miejsca, "Za malo miejsca w bufforze\n");
+				ASSERT_Z_ERROR_MSG(std::sprintf(buff, "%" FP_POS_F " + i%.1" FP_F "", X.Re, X.Im) < ile_miejsca, "Za malo miejsca w bufforze\n");
 			}
 			else {
-				ASSERT_Z_ERROR_MSG(std::sprintf(buff, "%.17lf + i%.17lf", X.Re, X.Im) < ile_miejsca, "Za malo miejsca w bufforze\n");
+				ASSERT_Z_ERROR_MSG(std::sprintf(buff, "%" FP_POS_F " + i%" FP_POS_F "", X.Re, X.Im) < ile_miejsca, "Za malo miejsca w bufforze\n");
 			}
 		}
 	}
@@ -82,8 +82,8 @@ __host__ void pokaz_stan(const estetyczny_wektor<towar>& wartosci) {
 	}
 }
 
-template __host__ void pokaz_transformate(transformata_macierz<double>& op);
+template __host__ void pokaz_transformate(transformata_macierz<fp_t>& op);
 template __host__ void pokaz_transformate(transformata_macierz<zesp>& op);
 
-template __host__ void pokaz_stan(const estetyczny_wektor<double>& wartosci);
+template __host__ void pokaz_stan(const estetyczny_wektor<fp_t>& wartosci);
 template __host__ void pokaz_stan(const estetyczny_wektor<zesp>& wartosci);

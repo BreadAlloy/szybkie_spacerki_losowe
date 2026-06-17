@@ -30,7 +30,7 @@ struct screenshot {
         //printf("Zlap okno do capurowania\n");
         //Sleep(5000);
         hDesktopWnd = GetForegroundWindow();//FindWindowW(NULL, L"Obraz w obrazie");
-        ASSERT_Z_INSTRUKCJA(hDesktopWnd != nullptr, printf("Kod errora: %lld\n", GetLastError()););
+        ASSERT_Z_INSTRUKCJA(hDesktopWnd != nullptr, printf("Kod errora: %ld\n", GetLastError()););
         hDesktopDC = GetDC(hDesktopWnd);
         hCaptureDC = CreateCompatibleDC(hDesktopDC);
 

@@ -3,16 +3,16 @@
 #include "transformaty_wyspecializowane.h"
 
 template <typename towar, typename transformata>
-__host__ grafika* grafika_P_dla_kraty_2D(spacer_losowy<towar, transformata>& spacer, spacer::dane_iteracji<towar>& iteracja, uint32_t width, uint32_t height, double* suma_ptr){
+__host__ grafika* grafika_P_dla_kraty_2D(spacer_losowy<towar, transformata>& spacer, spacer::dane_iteracji<towar>& iteracja, uint32_t width, uint32_t height, prob_t* suma_ptr){
 	// nie sprawdzam czy iteracja nale¿y do spaceru.
 	// potem trzeba zrobic delete grafika*
 
 	grafika* G = new grafika(width, height);
-	double max = 0.0;
-	double prawdopodobienstwo_suma = 0.0;
+	prob_t max = 0.0;
+	prob_t prawdopodobienstwo_suma = 0.0;
 
 	for (uint64_t j = 0; j < spacer.trwale.liczba_wierzcholkow(); j++) {
-		double prawdopodobienstwo = 0.0;
+		prob_t prawdopodobienstwo = 0.0;
 		spacer::wierzcholek& wierzcholek = spacer.trwale.wierzcholki[j];
 
 		for (uint8_t k = 0; k < wierzcholek.liczba_kierunkow; k++) {
@@ -42,14 +42,14 @@ __host__ grafika* grafika_P_dla_kraty_2D(spacer_losowy<towar, transformata>& spa
 	return G;
 }
 
-template __host__ grafika* grafika_P_dla_kraty_2D(spacer_losowy<double, TMDK>& spacer,
-				 spacer::dane_iteracji<double>& iteracja, uint32_t width, uint32_t height, double* suma_ptr);
+template __host__ grafika* grafika_P_dla_kraty_2D(spacer_losowy<fp_t, TMDK>& spacer,
+				 spacer::dane_iteracji<fp_t>& iteracja, uint32_t width, uint32_t height, prob_t* suma_ptr);
 
 template __host__ grafika* grafika_P_dla_kraty_2D(spacer_losowy<zesp, TMDQ>& spacer,
-			     spacer::dane_iteracji<zesp>& iteracja, uint32_t width, uint32_t height, double* suma_ptr);
+			     spacer::dane_iteracji<zesp>& iteracja, uint32_t width, uint32_t height, prob_t* suma_ptr);
 
 template __host__ grafika* grafika_P_dla_kraty_2D(spacer_losowy<zesp, TMCQ>& spacer,
-				 spacer::dane_iteracji<zesp>& iteracja, uint32_t width, uint32_t height, double* suma_ptr);
+				 spacer::dane_iteracji<zesp>& iteracja, uint32_t width, uint32_t height, prob_t* suma_ptr);
 
 
 
@@ -92,25 +92,26 @@ __host__ void plot_grafike_dla_kraty_2D(spacer_losowy<towar, transformata>& spac
 	}
 }
 
-template __host__ void plot_grafike_dla_kraty_2D(spacer_losowy<double, TMDK>& spacer, uint64_t pokazywana_grafika, graf& przestrzen, grafika* G, uint32_t width, uint32_t height, float skala_obrazu, std::string nazwa_wykresu);
+template __host__ void plot_grafike_dla_kraty_2D(spacer_losowy<fp_t, TMDK>& spacer, uint64_t pokazywana_grafika, graf& przestrzen, grafika* G, uint32_t width, uint32_t height, float skala_obrazu, std::string nazwa_wykresu);
 
 template __host__ void plot_grafike_dla_kraty_2D(spacer_losowy<zesp, TMDQ>& spacer, uint64_t pokazywana_grafika, graf& przestrzen, grafika* G, uint32_t width, uint32_t height, float skala_obrazu, std::string nazwa_wykresu);
 
 template __host__ void plot_grafike_dla_kraty_2D(spacer_losowy<zesp, TMCQ>& spacer, uint64_t pokazywana_grafika, graf& przestrzen, grafika* G, uint32_t width, uint32_t height, float skala_obrazu, std::string nazwa_wykresu);
 
+#if 0
 template <typename towar, typename transformata>
 __host__ std::vector<grafika*> grafiki_P_kierunkow_dla_kraty_2D(spacer_losowy<towar, transformata>& spacer, spacer::dane_iteracji<towar>& iteracja, uint32_t width, uint32_t height) {
 	// nie sprawdzam czy iteracja nale¿y do spaceru.
 	// potem trzeba zrobic delete grafika*
 	float* data = (float*)malloc(sizeof(float) * 2 * width * 2 * height);
 
-	double max = 0.0;
-	double max_0 = 0.0;
-	double max_1 = 0.0;
-	double max_2 = 0.0;
-	double max_3 = 0.0;
+	prob_t max = FP_ZERO;
+	prob_t max_0 = FP_ZERO;
+	prob_t max_1 = FP_ZERO;
+	prob_t max_2 = FP_ZERO;
+	prob_t max_3 = FP_ZERO;
 
-	double P_0, P_1, P_2, P_3;
+	prob_t P_0, P_1, P_2, P_3;
 	uint64_t w = 0;
 	for (uint64_t i = 0; i < 2 * height; i += 2) {
 		for (uint64_t j = 0; j < 2 * width; j += 2) {
@@ -308,6 +309,7 @@ __host__ std::vector<grafika*> grafiki_P_kierunkow_dla_kraty_2D(spacer_losowy<to
 }
 
 template __host__ std::vector<grafika*> grafiki_P_kierunkow_dla_kraty_2D(spacer_losowy<zesp, TMCQ>& spacer, spacer::dane_iteracji<zesp>& iteracja, uint32_t width, uint32_t height);
+#endif
 
 template <typename towar, typename transformata>
 __host__ void plot_spacer_dla_kraty_2D(spacer_losowy<towar, transformata>& spacer, statyczny_wektor<towar>& wartosci, graf& przestrzen, grafika* G, uint32_t width, uint32_t height, float skala_obrazu, std::string nazwa_wykresu) {
@@ -371,21 +373,21 @@ glm::vec3 kolory_kierunkow[4] = {
 };
 
 template <typename towar, typename transformata>
-__host__ grafika* grafika_P_kierunkow_dla_kraty_2D(spacer_losowy<towar, transformata>& spacer, spacer::dane_iteracji<towar>& iteracja, uint32_t width, uint32_t height, double* suma_ptr, float wzmocnienie, bool kasuj_data) {
+__host__ grafika* grafika_P_kierunkow_dla_kraty_2D(spacer_losowy<towar, transformata>& spacer, spacer::dane_iteracji<towar>& iteracja, uint32_t width, uint32_t height, prob_t* suma_ptr, float wzmocnienie, bool kasuj_data) {
 	return grafika_P_kierunkow_dla_kraty_2D(spacer, iteracja.wartosci, width, height, suma_ptr, wzmocnienie, kasuj_data);
 }
 
 template <typename towar, typename transformata, typename typ_wartosci>
-__host__ grafika* grafika_P_kierunkow_dla_kraty_2D(spacer_losowy<towar, transformata>& spacer, statyczny_wektor<typ_wartosci>& wartosci, uint32_t width, uint32_t height, double* suma_ptr, float wzmocnienie, bool kasuj_data) {
+__host__ grafika* grafika_P_kierunkow_dla_kraty_2D(spacer_losowy<towar, transformata>& spacer, statyczny_wektor<typ_wartosci>& wartosci, uint32_t width, uint32_t height, prob_t* suma_ptr, float wzmocnienie, bool kasuj_data) {
 	// nie sprawdzam czy iteracja nale¿y do spaceru.
 	// potem trzeba zrobic delete grafika*
 
 	grafika* G = new grafika(width, height);
-	double max = 0.0;
-	double prawdopodobienstwo_suma = 0.0;
+	prob_t max = FP_ZERO;
+	prob_t prawdopodobienstwo_suma = FP_ZERO;
 
 	for (uint64_t j = 0; j < spacer.trwale.liczba_wierzcholkow(); j++) {
-		double prawdopodobienstwo = 0.0;
+		prob_t prawdopodobienstwo = FP_ZERO;
 		spacer::wierzcholek& wierzcholek = spacer.trwale.wierzcholki[j];
 
 		for (uint8_t k = 0; k < wierzcholek.liczba_kierunkow; k++) {
@@ -425,13 +427,13 @@ __host__ grafika* grafika_P_kierunkow_dla_kraty_2D(spacer_losowy<towar, transfor
 	return G;
 }
 
-template __host__ grafika* grafika_P_kierunkow_dla_kraty_2D(spacer_losowy<zesp, TMCQ>& spacer, spacer::dane_iteracji<zesp>& iteracja, uint32_t width, uint32_t height, double* suma_ptr, float wzmocnienie, bool kasuj_data);
-template __host__ grafika* grafika_P_kierunkow_dla_kraty_2D(spacer_losowy<zesp, TMCQ>& spacer, statyczny_wektor<zesp>& wartosci, uint32_t width, uint32_t height, double* suma_ptr, float wzmocnienie, bool kasuj_data);
+template __host__ grafika* grafika_P_kierunkow_dla_kraty_2D(spacer_losowy<zesp, TMCQ>& spacer, spacer::dane_iteracji<zesp>& iteracja, uint32_t width, uint32_t height, prob_t* suma_ptr, float wzmocnienie, bool kasuj_data);
+template __host__ grafika* grafika_P_kierunkow_dla_kraty_2D(spacer_losowy<zesp, TMCQ>& spacer, statyczny_wektor<zesp>& wartosci, uint32_t width, uint32_t height, prob_t* suma_ptr, float wzmocnienie, bool kasuj_data);
 
 
-template __host__ grafika* grafika_P_kierunkow_dla_kraty_2D(spacer_losowy<zesp, TMDQ>& spacer, spacer::dane_iteracji<zesp>& iteracja, uint32_t width, uint32_t height, double* suma_ptr, float wzmocnienie, bool kasuj_data);
-template __host__ grafika* grafika_P_kierunkow_dla_kraty_2D(spacer_losowy<zesp, TMDQ>& spacer, statyczny_wektor<zesp>& wartosci, uint32_t width, uint32_t height, double* suma_ptr, float wzmocnienie, bool kasuj_data);
-template __host__ grafika* grafika_P_kierunkow_dla_kraty_2D(spacer_losowy<zesp, TMDQ>& spacer, statyczny_wektor<double>& wartosci, uint32_t width, uint32_t height, double* suma_ptr, float wzmocnienie, bool kasuj_data);
+template __host__ grafika* grafika_P_kierunkow_dla_kraty_2D(spacer_losowy<zesp, TMDQ>& spacer, spacer::dane_iteracji<zesp>& iteracja, uint32_t width, uint32_t height, prob_t* suma_ptr, float wzmocnienie, bool kasuj_data);
+template __host__ grafika* grafika_P_kierunkow_dla_kraty_2D(spacer_losowy<zesp, TMDQ>& spacer, statyczny_wektor<zesp>& wartosci, uint32_t width, uint32_t height, prob_t* suma_ptr, float wzmocnienie, bool kasuj_data);
+template __host__ grafika* grafika_P_kierunkow_dla_kraty_2D(spacer_losowy<zesp, TMDQ>& spacer, statyczny_wektor<fp_t>& wartosci, uint32_t width, uint32_t height, prob_t* suma_ptr, float wzmocnienie, bool kasuj_data);
 
 glm::vec3 kolory_pozycji[4] = {
 	glm::vec3(255.0f / 255.0f, 199.0f / 255.0f, 0.0f / 255.0f),
@@ -444,11 +446,11 @@ __host__ grafika* grafika_P_pozycji_2_krata_2D(spacer_losowy<towar, transformata
 	// potem trzeba zrobic delete grafika*
 
 	grafika* G = new grafika(width, height);
-	double max = 0.0;
+	prob_t max = 0.0;
 
 	for (uint64_t j = 0; j < spacer.trwale.liczba_wierzcholkow(); j++) {
-		double P1 = 0.0;
-		double P2 = 0.0;
+		prob_t P1 = 0.0;
+		prob_t P2 = 0.0;
 
 		spacer::wierzcholek& wierzcholek = spacer.trwale.wierzcholki[j];
 
@@ -490,7 +492,7 @@ __host__ grafika* grafika_P_pozycji_2_krata_2D(spacer_losowy<towar, transformata
 	return G;
 }
 
-template __host__ grafika* grafika_P_pozycji_2_krata_2D(spacer_losowy<zesp, TMDQ>& spacer, statyczny_wektor<double>& wartosci1, statyczny_wektor<double>& wartosci2, uint32_t width, uint32_t height, float wzmocnienie, bool kasuj_data);
+template __host__ grafika* grafika_P_pozycji_2_krata_2D(spacer_losowy<zesp, TMDQ>& spacer, statyczny_wektor<fp_t>& wartosci1, statyczny_wektor<fp_t>& wartosci2, uint32_t width, uint32_t height, float wzmocnienie, bool kasuj_data);
 
 
 

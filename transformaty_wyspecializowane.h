@@ -6,18 +6,18 @@
 
 #include "zesp.h"
 
-struct transformata_macierz_dyskretna_klasyczna : transformata_macierz<double>{
+struct transformata_macierz_dyskretna_klasyczna : transformata_macierz<fp_t>{
 	typedef transformata_macierz_dyskretna_klasyczna TMDK;
 
-	transformata_macierz_dyskretna_klasyczna(transformata_macierz<double> M)
-	: transformata_macierz<double>(M){}
+	transformata_macierz_dyskretna_klasyczna(transformata_macierz<fp_t> M)
+	: transformata_macierz<fp_t>(M){}
 
 	__HD__ void transformuj(spacer::dane_trwale<TMDK>& trwale, const spacer::wierzcholek& wierzcholek,
-		spacer::dane_iteracji<double>& iteracja_z, spacer::dane_iteracji<double>& iteracja_do, uint64_t index_w_wierzcholku, uint64_t)
+		spacer::dane_iteracji<fp_t>& iteracja_z, spacer::dane_iteracji<fp_t>& iteracja_do, uint64_t index_w_wierzcholku, uint64_t)
 	{
 		TMDK& transformata = trwale.transformaty[wierzcholek.transformer];
-		estetyczny_wektor<double> a(&(iteracja_z[wierzcholek.start_wartosci]), wierzcholek.liczba_kierunkow);
-		estetyczny_wektor<double> b(&(transformata((uint8_t)index_w_wierzcholku, 0)), transformata.arrnosc);
+		estetyczny_wektor<fp_t> a(&(iteracja_z[wierzcholek.start_wartosci]), wierzcholek.liczba_kierunkow);
+		estetyczny_wektor<fp_t> b(&(transformata((uint8_t)index_w_wierzcholku, 0)), transformata.arrnosc);
 		iteracja_do[(uint64_t)trwale.gdzie_wyslac[wierzcholek.start_wartosci + index_w_wierzcholku]] = dot(b, a);
 	}
 };
@@ -43,7 +43,7 @@ struct transformata_macierz_dyskretna_kwantowa : transformata_macierz<zesp> {
 typedef transformata_macierz_dyskretna_kwantowa TMDQ;
 
 
-constexpr double dt = 0.01;
+constexpr fp_t dt = fp_t(0.01);
 
 struct transformata_macierz_ciagla_kwantowa : transformata_macierz<zesp> {
 	typedef transformata_macierz_ciagla_kwantowa TMCQ;

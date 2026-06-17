@@ -4,15 +4,15 @@ bool __host__ ortonormalizuj(std::vector<zesp>& wektor, uint64_t arrnosc){
 	ASSERT_Z_ERROR_MSG(wektor.size() == arrnosc*arrnosc, "Niepoprawny rozmiar wektora, albo arrnosc\n");
 	for(uint64_t i = 0; i < arrnosc; i++){
 
-		double norma = 0.0;
+		fp_t norma = FP_ZERO;
 		for (uint64_t j = 0; j < arrnosc; j++) {
 			norma += P(wektor[i * arrnosc + j]);
 		}
-		if (norma < 10e-10) {
+		if (norma < fp_tolerancja) {
 			return false; // s³aba ortonormalizacja
 		}
 
-		double normalizator = 1.0 / NORMA(1.0, norma, zesp());
+		fp_t normalizator = FP_JEDEN / NORMA(FP_JEDEN, norma, zesp());
 		for (uint64_t j = 0; j < arrnosc; j++) {
 			wektor[i * arrnosc + j] *= normalizator;
 		}
@@ -33,7 +33,7 @@ bool __host__ ortonormalizuj(std::vector<zesp>& wektor, uint64_t arrnosc){
 	}
 	
 	//for (uint64_t i = 0; i < arrnosc; i++) {
-	//	double norma = 0.0;
+	//	fp_t norma = 0.0;
 	//	for (uint64_t j = 0; j < arrnosc; j++) {
 	//		norma += P(wektor[i * arrnosc + j]);
 	//	}
@@ -41,7 +41,7 @@ bool __host__ ortonormalizuj(std::vector<zesp>& wektor, uint64_t arrnosc){
 	//		return false; // s³aba ortonormalizacja
 	//	}
 
-	//	double normalizator = 1.0/NORMA(1.0, norma, zesp());
+	//	fp_t normalizator = 1.0/NORMA(1.0, norma, zesp());
 	//	for (uint64_t j = 0; j < arrnosc; j++) {
 	//		wektor[i * arrnosc + j] *= normalizator;
 	//	}
@@ -50,11 +50,11 @@ bool __host__ ortonormalizuj(std::vector<zesp>& wektor, uint64_t arrnosc){
 	return true; // dobra ortonormalizacja
 }
 
-zesp __HD__ expi(double x){
+zesp __HD__ expi(fp_t x){
 	return zesp(cos(x), sin(x));
 }
 
-transformata_macierz<zesp> __host__ transformata_postac_ogolna(double theta, double alpha, double beta, double gamma){
+transformata_macierz<zesp> __host__ transformata_postac_ogolna(fp_t theta, fp_t alpha, fp_t beta, fp_t gamma){
 	zesp faza_globalna = expi(alpha);
 	return transformata_macierz<zesp>(faza_globalna * expi(beta) * cos(theta), faza_globalna * expi(gamma) * sin(theta),
 									-faza_globalna * expi(-gamma) * sin(theta), faza_globalna * expi(-beta) * cos(theta));

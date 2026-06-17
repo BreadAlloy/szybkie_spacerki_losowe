@@ -3,19 +3,19 @@
 #include "losowe.h"
 
 namespace losowosc_globalna {
-	constexpr double dwa_pi = 3.1415926535897932 * 2.0;
+	constexpr fp_t dwa_pi = fp_t(3.1415926535897932 * 2.0);
 
 	uint64_t nasionko = 1;
 
-	std::uniform_real_distribution<double> losowe_przecinkowe(0.0, 1.0);
-	std::uniform_real_distribution<double> losowe_kat(0.0, dwa_pi);
+	std::uniform_real_distribution<fp_t> losowe_przecinkowe(FP_ZERO, FP_JEDEN);
+	std::uniform_real_distribution<fp_t> losowe_kat(FP_ZERO, dwa_pi);
 	std::mt19937_64 rng(nasionko);
 
-	double __host__ losowa_przecinkowa() {
+	fp_t __host__ losowa_przecinkowa() {
 		return losowe_przecinkowe(rng);
 	}
 
-	double __host__ losowy_kat() {
+	fp_t __host__ losowy_kat() {
 		return losowe_przecinkowe(rng);
 	}
 
@@ -24,12 +24,12 @@ namespace losowosc_globalna {
 	}
 
 	zesp __host__ losowy_zesp_z_okregu() {
-		double kat = losowy_kat();
+		fp_t kat = losowy_kat();
 		return zesp(cos(kat), sin(kat));
 	}
 
 	zesp __host__ losowy_zesp_z_kola() {
-		double kat = losowy_kat();
+		fp_t kat = losowy_kat();
 		return zesp(cos(kat), sin(kat)) * losowa_przecinkowa();
 	}
 };

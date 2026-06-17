@@ -30,6 +30,8 @@ _ACRTIMP void __cdecl _wassert(
 
 #define ASSERT_Z_INSTRUKCJA(warunek, instrukcja) if(!(warunek)) {instrukcja spacer_assert(false); }
 
+#define NIE_ZAIMPLEMENTOWANE_ERROR(wiadomosc) ASSERT_Z_ERROR_MSG(false, "Nie zaimplementowane: "##wiadomosc)
+
 //wiadomoœæ mo¿e byæ z formatem po przecinku tylko wtedy trzeba SEP u¿yæ na wyra¿eniu
 
 #include <chrono>
@@ -44,4 +46,5 @@ _ACRTIMP void __cdecl _wassert(
 				  diff = (long int)std::chrono::duration_cast<std::chrono::microseconds> (end - begin).count();\
 				  printf("Trwalo: %d ms\n", diff/1000);
 
-
+#include <type_traits>
+#include <limits>

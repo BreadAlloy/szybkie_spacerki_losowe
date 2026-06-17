@@ -2,18 +2,14 @@
 
 #include "pomocne_funkcje.h"
 
-//#ifdef __CUDA_ARCH__
-//#include "zesp.cpp"
-//#endif
-
 // Nie chce u¿ywaæ funkcji z _s
 #pragma warning(disable : 4996)
 
 struct zesp {
-    fp_typ Re = 0.0;
-    fp_typ Im = 0.0;
+    fp_t Re = FP_ZERO;
+    fp_t Im = FP_ZERO;
 
-    constexpr __HD__ zesp(const fp_typ Re_part = 0.0, const fp_typ Im_part = 0.0)
+    constexpr __HD__ zesp(const fp_t Re_part = FP_ZERO, const fp_t Im_part = FP_ZERO)
         : Re(Re_part), Im(Im_part){}
 
     __HD__ zesp(const zesp& a) {
@@ -36,7 +32,7 @@ struct zesp {
         return res;
     }
 
-    __HD__ fp_typ norm() const {
+    __HD__ fp_t norm() const {
         return Re * Re + Im * Im/* + this->y.Re * this->y.Re + this->y.Im * this->y.Im*/;
     }
 
@@ -45,8 +41,8 @@ struct zesp {
     }
 
     __HD__ zesp sqrt() const {
-        fp_typ r = std::sqrt(Re * Re + Im * Im);
-        fp_typ a = std::acos(Re / r);
+        fp_t r = std::sqrt(Re * Re + Im * Im);
+        fp_t a = std::acos(Re / r);
         //printf("%lf, %lf, %lf\n", r , Im / r, Re / r);
         a = a / 2;
         r = std::sqrt(r);
@@ -64,7 +60,7 @@ struct zesp {
         this->Im -= a.Im;
     }
 
-    __HD__ fp_typ abs() const {
+    __HD__ fp_t abs() const {
         return std::sqrt(Re * Re + Im * Im);
     }
 
@@ -83,7 +79,7 @@ struct zesp {
         return res;
     }
 
-    __HD__ static friend zesp operator/(const zesp& a, const fp_typ b) {
+    __HD__ static friend zesp operator/(const zesp& a, const fp_t b) {
         zesp res(a.Re / b, a.Im / b);
         return res;
     }
@@ -98,7 +94,7 @@ struct zesp {
         a = a / b;
     }
 
-    __HD__ static friend void operator/=(zesp& a, const fp_typ& b) {
+    __HD__ static friend void operator/=(zesp& a, const fp_t& b) {
         a = a / b;
     }
 
@@ -106,7 +102,7 @@ struct zesp {
         a = a * b;
     }
 
-    __HD__ static friend void operator*=(zesp& a, const fp_typ& b) {
+    __HD__ static friend void operator*=(zesp& a, const fp_t& b) {
         a = a * b;
     }
 
@@ -119,7 +115,11 @@ struct zesp {
     }
 
     __host__ static friend void z_bin(char* s, zesp& X) {
-        int zwrot = std::sscanf(s, "%lf + i%lf", &(X.Re), &(X.Im));
+        if constexpr (std::is_same<fp_t, double>::value){
+            NIE_ZAIMPLEMENTOWANE_ERROR("czytanie zesp z binarnych\n");
+        }
+
+        int zwrot = std::sscanf(s, "%" FP_F " + i%" FP_F "", &(X.Re), &(X.Im));
         //printf("sscanf: %d\n", zwrot);
         if (2 != zwrot) {
             std::printf("Problem na: %s\n", s);
@@ -132,7 +132,10 @@ constexpr inline __HD__ zesp zero(zesp) {
     return zesp(zero(double()), zero(double()));
 }
 
+#define ZESP_ZERO zero(zesp())
+
 constexpr inline __HD__ zesp jeden(zesp) {
     return zesp(jeden(double()), zero(double()));
 }
 
+#define ZESP_JEDEN jeden(zesp())

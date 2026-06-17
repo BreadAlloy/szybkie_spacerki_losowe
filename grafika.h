@@ -149,7 +149,7 @@ struct grafika {
 #include "spacer_losowy.h"
 
 template <typename towar, typename transformata>
-__host__ grafika* grafika_P_dla_kraty_2D(spacer_losowy<towar, transformata>& spacer, spacer::dane_iteracji<towar>& iteracja, uint32_t width, uint32_t height, double* suma_ptr = nullptr);
+__host__ grafika* grafika_P_dla_kraty_2D(spacer_losowy<towar, transformata>& spacer, spacer::dane_iteracji<towar>& iteracja, uint32_t width, uint32_t height, prob_t* suma_ptr = nullptr);
 
 template <typename towar, typename transformata>
 __host__ void plot_grafike_dla_kraty_2D(spacer_losowy<towar, transformata>& spacer, uint64_t pokazywana_grafika, graf& przestrzen, grafika* G, uint32_t width, uint32_t height, float skala_obrazu, std::string nazwa_wykresu = "##");
@@ -164,10 +164,10 @@ template <typename towar, typename transformata>
 __host__ void plot_spacer_dla_kraty_2D(spacer_losowy<towar, transformata>& spacer, uint64_t pokazywana_grafika, graf& przestrzen, grafika* G, uint32_t width, uint32_t height, float skala_obrazu, std::string nazwa_wykresu);
 
 template <typename towar, typename transformata, typename typ_wartosci>
-__host__ grafika* grafika_P_kierunkow_dla_kraty_2D(spacer_losowy<towar, transformata>& spacer, statyczny_wektor<typ_wartosci>& wartosci, uint32_t width, uint32_t height, double* suma_ptr = nullptr, float wzmocnienie = 1.0f, bool kasuj_data = true);
+__host__ grafika* grafika_P_kierunkow_dla_kraty_2D(spacer_losowy<towar, transformata>& spacer, statyczny_wektor<typ_wartosci>& wartosci, uint32_t width, uint32_t height, prob_t* suma_ptr = nullptr, float wzmocnienie = 1.0f, bool kasuj_data = true);
 
 template <typename towar, typename transformata>
-__host__ grafika* grafika_P_kierunkow_dla_kraty_2D(spacer_losowy<towar, transformata>& spacer, spacer::dane_iteracji<towar>& iteracja, uint32_t width, uint32_t height, double* suma_ptr = nullptr, float wzmocnienie = 1.0f, bool kasuj_data = true);
+__host__ grafika* grafika_P_kierunkow_dla_kraty_2D(spacer_losowy<towar, transformata>& spacer, spacer::dane_iteracji<towar>& iteracja, uint32_t width, uint32_t height, prob_t* suma_ptr = nullptr, float wzmocnienie = 1.0f, bool kasuj_data = true);
 
 template <typename towar, typename transformata, typename typ_wartosci>
 __host__ grafika* grafika_P_pozycji_2_krata_2D(spacer_losowy<towar, transformata>& spacer, statyczny_wektor<typ_wartosci>& wartosci1, statyczny_wektor<typ_wartosci>& wartosci2, uint32_t width, uint32_t height, float wzmocnienie = 1.0f, bool kasuj_data = true);

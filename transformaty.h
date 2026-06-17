@@ -6,7 +6,7 @@
 
 #include "zesp.h"
 
-__host__ std::string do_bin(const double&);
+__host__ std::string do_bin(const fp_t&);
 
 __host__ std::string do_bin(const zesp&);
 
@@ -155,4 +155,4 @@ __HD__ transformata_macierz<zesp> hermituj(const transformata_macierz<zesp>&);
 
 __HD__ bool sprawdz_poprawnosc(const transformata_macierz<zesp>&);
 
-__HD__ bool sprawdz_poprawnosc(const transformata_macierz<double>&);
+__HD__ bool sprawdz_poprawnosc(const transformata_macierz<fp_t>&);

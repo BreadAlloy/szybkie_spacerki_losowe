@@ -7,13 +7,13 @@ __host__ podobienstwo_liniowe dopasuj_liniowo(statyczny_wektor<zesp>& A, statycz
 
 	podobienstwo_liniowe podob = podobienstwo_liniowe(A.rozmiar);
 
-	double rozmiar = (double)podob.blad.rozmiar;
-	double suma_wag = 0.0;
+	//fp_t rozmiar = (fp_t)podob.blad.rozmiar;
+	fp_t suma_wag = 0.0;
 	zesp suma_skalarow = zesp(0.0, 0.0);
 	for (uint64_t i = 0; i < podob.blad.rozmiar; i++) {
-		if (A[i].norm() < 1e-8 && B[i].norm() < 1e-8) continue;
+		if (A[i].norm() < 1e-8 && B[i].norm() < 1e-8) continue; // Niesprawdzone
 		zesp lokalny_skalar = (B[i] / A[i]);
-		double waga_skalaru = A[i].norm();
+		fp_t waga_skalaru = A[i].norm();
 		suma_skalarow += lokalny_skalar * waga_skalaru;
 		suma_wag += waga_skalaru;
 		//if ((lokalny_skalar * A[i] - B[i]).norm() < 1e-4) {
@@ -35,8 +35,8 @@ __host__ podobienstwo_liniowe dopasuj_liniowo_norma(statyczny_wektor<zesp>& A, s
 
 	podobienstwo_liniowe podob = podobienstwo_liniowe(A.rozmiar);
 
-	double suma_prawdopodob_A = 0.0;
-	double suma_prawdopodob_B = 0.0;
+	prob_t suma_prawdopodob_A = 0.0;
+	prob_t suma_prawdopodob_B = 0.0;
 	for (uint64_t i = 0; i < podob.blad.rozmiar; i++) {
 		suma_prawdopodob_A += P(A[i]);
 		suma_prawdopodob_B += P(B[i]);

@@ -1,8 +1,8 @@
 #pragma once
 
-__HD__ __forceinline__ double dot(const estetyczny_wektor<double>& a, const estetyczny_wektor<double>& b) {
+__HD__ __forceinline__ fp_t dot(const estetyczny_wektor<fp_t>& a, const estetyczny_wektor<fp_t>& b) {
 	ASSERT_Z_ERROR_MSG(a.rozmiar == b.rozmiar, "Dot product na innej ilosci elementow\n");
-	double sum = 0.0;
+	fp_t sum = FP_ZERO;
 	for (uint64_t i = 0; i < a.rozmiar; i++) {
 		sum += (a[i] * b[i]);
 	}

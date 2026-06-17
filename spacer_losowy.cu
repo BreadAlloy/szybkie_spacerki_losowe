@@ -30,9 +30,9 @@ __global__ void suma_czesc_1(towar* sumowany, towar* cache, przydzielacz_prac pr
 
 // na wiele blokow
 template<typename towar>
-__global__ void suma_P_czesc_1(towar* sumowany, double* cache, przydzielacz_prac przydzial) {
-	extern __shared__ double podsumy[];
-	double suma = 0.0;
+__global__ void suma_P_czesc_1(towar* sumowany, fp_t* cache, przydzielacz_prac przydzial) {
+	extern __shared__ fp_t podsumy[];
+	fp_t suma = 0.0;
 	for (uint64_t j = 0; j < przydzial.ile_prac; j++) {
 		uint64_t index_pracownika = przydzial.index_pracownika(j, threadIdx.x, blockIdx.x);
 		if (index_pracownika >= przydzial.ile_prac_sumarycznie){break;}
@@ -89,21 +89,21 @@ struct gpu_sumator{
 
 template<typename towar>
 struct gpu_P_sumator {
-	double* cache;
+	fp_t* cache;
 	uint64_t rozmiar_sumowanego = 0;
 	przydzielacz_prac przydzielacz;
 
 	__host__ gpu_P_sumator(uint64_t rozmiar_sumowanego, uint64_t max_ile_watkow = 500, uint64_t ile_prac_na_watek = 10)
 		: rozmiar_sumowanego(rozmiar_sumowanego), przydzielacz(rozmiar_sumowanego, ile_prac_na_watek, max_ile_watkow) {
-		sprawdzCudaErrors(cudaMalloc((void**)&cache, sizeof(double) * przydzielacz.ile_blokow));
+		sprawdzCudaErrors(cudaMalloc((void**)&cache, sizeof(fp_t) * przydzielacz.ile_blokow));
 	}
 
-	__host__ void sumuj(const statyczny_wektor<towar>& sumowany, double* adres_zwrotu, cudaStream_t stream) {
+	__host__ void sumuj(const statyczny_wektor<towar>& sumowany, fp_t* adres_zwrotu, cudaStream_t stream) {
 		if (rozmiar_sumowanego != 0) {
 			ASSERT_Z_ERROR_MSG(rozmiar_sumowanego == sumowany.rozmiar, "Nie jest to ten sam rozmiar\n");
-			suma_P_czesc_1<towar>start_kernel(przydzielacz, przydzielacz.ile_watkow * sizeof(double), stream)
+			suma_P_czesc_1<towar>start_kernel(przydzielacz, przydzielacz.ile_watkow * sizeof(fp_t), stream)
 				(sumowany.pamiec_device, cache, przydzielacz);
-			suma_czesc_2<double><<<1, 1, 0, stream>>>
+			suma_czesc_2<fp_t><<<1, 1, 0, stream>>>
 				(cache, przydzielacz.ile_blokow, adres_zwrotu);
 		}
 	}
@@ -133,12 +133,12 @@ __global__ void iteracja_na_gpu(spacer::dane_trwale<transformata>* trwale, space
 }
 
 template <typename towar, typename transformata>
-__global__ void absorbuj_na_gpu(spacer::dane_trwale<transformata>* trwale, spacer::dane_iteracji<towar>* iteracja_z, spacer::dane_iteracji<towar>* iteracja_do, double procent_absorbowany,
+__global__ void absorbuj_na_gpu(spacer::dane_trwale<transformata>* trwale, spacer::dane_iteracji<towar>* iteracja_z, spacer::dane_iteracji<towar>* iteracja_do, fp_t procent_absorbowany,
 	przydzielacz_prac przydzial){
 	ASSERT_Z_ERROR_MSG(config::absorbcja, "Tego w tym configu nie wolamy\n");
 
-	double norma_zabranego = NORMA(1.0, procent_absorbowany, towar());
-	double norma_pozostawionego = NORMA(1.0, 1.0 - procent_absorbowany, towar());
+	fp_t norma_zabranego = NORMA(1.0, procent_absorbowany, towar());
+	fp_t norma_pozostawionego = NORMA(1.0, 1.0 - procent_absorbowany, towar());
 
 	for (uint64_t j = 0; j < przydzial.ile_prac; j++) {
 		uint64_t index_pracownika = przydzial.index_pracownika(j, threadIdx.x, blockIdx.x);
@@ -154,15 +154,15 @@ __global__ void absorbuj_na_gpu(spacer::dane_trwale<transformata>* trwale, space
 }
 
 template <typename towar>
-__global__ void policz_wspolczynnik_normalizacji(spacer::dane_iteracji<towar>* iteracja_z, spacer::dane_iteracji<towar>* iteracja_do, double poczatkowe_prawdopodobienstwo = 1.0) { //na jeden watek w jednym bloku
+__global__ void policz_wspolczynnik_normalizacji(spacer::dane_iteracji<towar>* iteracja_z, spacer::dane_iteracji<towar>* iteracja_do, fp_t poczatkowe_prawdopodobienstwo = 1.0) { //na jeden watek w jednym bloku
 	ASSERT_Z_ERROR_MSG(config::normalizacja, "Tego w tym configu nie wolamy\n");
 	iteracja_do->zaabsorbowane_poprzedniej += iteracja_do->zaabsorbowane_poprzedniej;
-	double powinno_byc = poczatkowe_prawdopodobienstwo - iteracja_do->zaabsorbowane_poprzedniej;
+	fp_t powinno_byc = poczatkowe_prawdopodobienstwo - iteracja_do->zaabsorbowane_poprzedniej;
 	iteracja_do->norma_poprzedniej_iteracji = NORMA(iteracja_do->prawdopodobienstwo_poprzedniej, powinno_byc, towar());
 }
 
 template <typename towar, typename transformata>
-__global__ void zakoncz_iteracje(spacer::dane_iteracji<towar>* iteracja_do, double t) { //na jeden watek w jednym bloku
+__global__ void zakoncz_iteracje(spacer::dane_iteracji<towar>* iteracja_do, fp_t t) { //na jeden watek w jednym bloku
 	iteracja_do->czas = t;
 }
 
@@ -174,14 +174,14 @@ __global__ void nie_normalizuj(spacer::dane_iteracji<towar>* iteracja_z, spacer:
 }
 
 template <typename towar, typename transformata>
-__host__ void iteracje_na_gpu(spacer_losowy<towar, transformata>& spacer, double delta_t,
+__host__ void iteracje_na_gpu(spacer_losowy<towar, transformata>& spacer, fp_t delta_t,
 	uint64_t liczba_iteracji, uint64_t ile_prac_na_watek, uint32_t ile_watkow_na_blok_max, uint32_t co_ile_zapisac, uint32_t co_ile_normalizuj, uint32_t co_ile_absorbuj) {
 
 	przydzielacz_prac przydzielacz_iteracja(spacer.trwale.ile_prac(), ile_prac_na_watek, ile_watkow_na_blok_max);
 	przydzielacz_prac przydzielacz_absorbcja(spacer.trwale.liczba_absorberow(), ile_prac_na_watek, ile_watkow_na_blok_max);
 
 	gpu_P_sumator<towar> sumator_P(spacer.iteracjaA.wartosci.rozmiar, 300, 20);
-	gpu_sumator<double> sumator(spacer.iteracjaA.wartosci_zaabsorbowane.rozmiar, 300, 20);
+	gpu_sumator<fp_t> sumator(spacer.iteracjaA.wartosci_zaabsorbowane.rozmiar, 300, 20);
 
 	for(uint32_t i = 0; i < liczba_iteracji; i++){		
 		//Wskazniki poprawne na GPU
@@ -231,14 +231,14 @@ __host__ void iteracje_na_gpu(spacer_losowy<towar, transformata>& spacer, double
 	}
 }
 
-template __host__ void iteracje_na_gpu<zesp, TMDQ>(spacer_losowy<zesp, TMDQ>& spacer, double delta_t,
+template __host__ void iteracje_na_gpu<zesp, TMDQ>(spacer_losowy<zesp, TMDQ>& spacer, fp_t delta_t,
 	uint64_t liczba_iteracji, uint64_t ile_prac_na_watek, uint32_t ile_watkow_na_blok_max, uint32_t co_ile_zapisac, uint32_t co_ile_normalizuj, uint32_t co_ile_absorbuj);
 
-template __host__ void iteracje_na_gpu<zesp, TMCQ>(spacer_losowy<zesp, TMCQ>& spacer, double delta_t,
+template __host__ void iteracje_na_gpu<zesp, TMCQ>(spacer_losowy<zesp, TMCQ>& spacer, fp_t delta_t,
 	uint64_t liczba_iteracji, uint64_t ile_prac_na_watek, uint32_t ile_watkow_na_blok_max, uint32_t co_ile_zapisac, uint32_t co_ile_normalizuj, uint32_t co_ile_absorbuj);
 
 template <typename towar, typename transformata>
-__host__ void proste_iteracje_na_gpu(spacer_losowy<towar, transformata>& spacer, double delta_t,
+__host__ void proste_iteracje_na_gpu(spacer_losowy<towar, transformata>& spacer, fp_t delta_t,
 	uint64_t liczba_iteracji, uint64_t ile_prac_na_watek, uint32_t ile_watkow_na_blok_max, uint32_t co_ile_zapisac) {
 	// spacer nie korzysta z sumy, normalizacji, absorbcji
 
@@ -272,19 +272,19 @@ __host__ void proste_iteracje_na_gpu(spacer_losowy<towar, transformata>& spacer,
 	sprawdzCudaErrors(cudaGetLastError());
 }
 
-template __host__ void proste_iteracje_na_gpu<zesp, TMDQ>(spacer_losowy<zesp, TMDQ>& spacer, double delta_t,
+template __host__ void proste_iteracje_na_gpu<zesp, TMDQ>(spacer_losowy<zesp, TMDQ>& spacer, fp_t delta_t,
 	uint64_t liczba_iteracji, uint64_t ile_prac_na_watek, uint32_t ile_watkow_na_blok_max, uint32_t co_ile_zapisac);
 
 __HD__ void testy_macierzy() {
-	transformata_macierz<double> t1(1.0);
-	transformata_macierz<double> t2(0.75, 0.5, 0.25, 0.5);
-	transformata_macierz<double> t3((uint8_t)6);
-	double temp[4] = { 0.5, 0.75, 0.5, 0.25 };
-	transformata_macierz<double> t4((uint8_t)2, temp);
-	transformata_macierz<double> t5(t2);
-	transformata_macierz<double> t6 = t3;
-	transformata_macierz<double> t7(mnoz(t4, t5));
-	transformata_macierz<double> t8(tensor(t4, t5));
+	transformata_macierz<fp_t> t1(1.0f);
+	transformata_macierz<fp_t> t2(0.75, 0.5, 0.25, 0.5);
+	transformata_macierz<fp_t> t3((uint8_t)6);
+	fp_t temp[4] = { 0.5, 0.75, 0.5, 0.25 };
+	transformata_macierz<fp_t> t4((uint8_t)2, temp);
+	transformata_macierz<fp_t> t5(t2);
+	transformata_macierz<fp_t> t6 = t3;
+	transformata_macierz<fp_t> t7(mnoz(t4, t5));
+	transformata_macierz<fp_t> t8(tensor(t4, t5));
 	IF_HOST(printf("t8: %s\n", t8.str().c_str());)
 	bool t9 = (t6 == t3);
 }

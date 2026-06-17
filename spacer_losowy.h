@@ -10,26 +10,21 @@
 
 #include "losowe.h"
 
-typedef double typ_prawdopodobienstwa;
-
-static inline __HD__ double P(double a){
+static inline __HD__ prob_t P(fp_t a){
 	return a;
 }
 
-static inline __HD__ double P(const zesp& a) {
+static inline __HD__ prob_t P(const zesp& a) {
 	return a.norm();
 }
 
-static inline __HD__ double NORMA(const double jest, const double powinno_byc, zesp) {
+static inline __HD__ prob_t NORMA(const prob_t jest, const prob_t powinno_byc, zesp) {
 	return sqrt(powinno_byc / jest);
 }
 
-static inline __HD__ double NORMA(const double jest, const double powinno_byc, double) {
+static inline __HD__ prob_t NORMA(const prob_t jest, const prob_t powinno_byc, fp_t) {
 	return powinno_byc / jest;
 }
-
-constexpr typ_prawdopodobienstwa dokladnosc = 1.0e-10;
-constexpr typ_prawdopodobienstwa tolerancja = 1.0e-10;
 
 namespace spacer{
 
@@ -101,7 +96,7 @@ struct dane_trwale{ //operatory, to gdzie wysy³aæ, przestrzen, raczej nie zmieni
 	
 	// Do absorbcji i normalizacji
 	statyczny_wektor<idW_t> indeksy_absorbowane;
-	double poczatkowe_prawdopodobienstwo = 1.0;
+	fp_t poczatkowe_prawdopodobienstwo = 1.0;
 
 	// do pomiaru rozproszonego
 	statyczny_wektor<idW_t> indeksy_mierzone;
@@ -323,11 +318,11 @@ struct dane_trwale{ //operatory, to gdzie wysy³aæ, przestrzen, raczej nie zmieni
 template<typename towar>
 struct dane_iteracji{
 	statyczny_wektor<towar> wartosci;
-	statyczny_wektor<double> wartosci_zaabsorbowane;
- 	double czas = 0.0;
-	double prawdopodobienstwo_poprzedniej = 1.0;
-	double zaabsorbowane_poprzedniej = 0.0;
-	double norma_poprzedniej_iteracji = 1.0;
+	statyczny_wektor<fp_t> wartosci_zaabsorbowane;
+ 	fp_t czas = 0.0;
+	fp_t prawdopodobienstwo_poprzedniej = 1.0;
+	fp_t zaabsorbowane_poprzedniej = 0.0;
+	fp_t norma_poprzedniej_iteracji = 1.0;
 
 	dane_iteracji(uint64_t liczba_wartosci = 0, uint64_t liczba_absorberow = 0)
 	: wartosci(liczba_wartosci), wartosci_zaabsorbowane(liczba_absorberow) {}
@@ -339,11 +334,11 @@ struct dane_iteracji{
 
 	void zeruj(){
 		wartosci.memset(zero(towar()));
-		wartosci_zaabsorbowane.memset(zero(double()));
+		wartosci_zaabsorbowane.memset(FP_ZERO);
 	}
 
-	__host__ typ_prawdopodobienstwa prawdopodobienstwo_suma() const {
-		typ_prawdopodobienstwa suma = zero(double());
+	__host__ prob_t prawdopodobienstwo_suma() const {
+		prob_t suma = FP_ZERO;
 		for (uint64_t i = 0; i < wartosci.rozmiar; i++) {
 			suma += P(wartosci[i]);
 		}
@@ -445,8 +440,8 @@ struct spacer_losowy{
 		bool ret = true;
 		ret = trwale.czy_gotowy();
 		// czy prawdopodobienstwo sumuje siê do 1.0;
-		typ_prawdopodobienstwa prawdopodop = iteracjaA.prawdopodobienstwo_suma();
-		if(abs(prawdopodop - 1.0) > dokladnosc){
+		prob_t prawdopodop = iteracjaA.prawdopodobienstwo_suma();
+		if(abs(prawdopodop - FP_JEDEN) > fp_tolerancja){
 			printf("Prawdopodobienstwo nie sumuje sie do 1.0; Brakuje %lf\n", abs(prawdopodop - 1.0));
 			ret = false;
 		}
@@ -457,8 +452,8 @@ struct spacer_losowy{
 	__host__ void przygotuj_pierwsza_iteracje(){
 		iteracjaA = spacer::dane_iteracji<towar>(trwale.liczba_kubelkow(), trwale.liczba_absorberow());
 		iteracjaA.zeruj();
-		iteracjaA.czas = 0.0;
-		iteracjaA.norma_poprzedniej_iteracji = 1.0;
+		iteracjaA.czas = FP_ZERO;
+		iteracjaA.norma_poprzedniej_iteracji = FP_JEDEN;
 
 		iteracjaB = spacer::dane_iteracji<towar>(trwale.liczba_kubelkow(), trwale.liczba_absorberow());
 	}
@@ -517,14 +512,14 @@ struct spacer_losowy{
 		for (uint64_t i = 0; i < trwale.wierzcholki.rozmiar; i++) {
 			spacer::wierzcholek& wierzcholek = trwale.wierzcholki[i];
 
-			double dP = iteracja_do->wspolczynniki_normalizacji[i];
-			double prawdopodobienstwo = 0.0;
+			fp_t dP = iteracja_do->wspolczynniki_normalizacji[i];
+			fp_t prawdopodobienstwo = 0.0;
 			for (uint64_t j = 0; j < wierzcholek.liczba_kierunkow; j++) {
 				prawdopodobienstwo += P(iteracja_do->operator[](wierzcholek.start_wartosci + j));
 			}
 
 			if(prawdopodobienstwo > 1.0e-5){ // watpliwy warunek TU PROBLEM
-				double normalizujacy = sqrt(1.0 - dP/prawdopodobienstwo);
+				fp_t normalizujacy = sqrt(1.0 - dP/prawdopodobienstwo);
 				for (uint64_t j = 0; j < wierzcholek.liczba_kierunkow; j++) {
 					iteracja_do->operator[](wierzcholek.start_wartosci + j) *= normalizujacy;
 				}
@@ -534,7 +529,7 @@ struct spacer_losowy{
 	#endif
 
 	// najpierw iteracja
-	__host__ void absorbuj_na_cpu(double procent_absorbowany = 1.0){
+	__host__ void absorbuj_na_cpu(fp_t procent_absorbowany = FP_JEDEN){
 		ASSERT_Z_ERROR_MSG(config::absorbcja, "Tego w tym configu nie wolamy\n");
 
 		spacer::dane_iteracji<towar>* iteracja_z = &iteracjaA;
@@ -549,8 +544,8 @@ struct spacer_losowy{
 			return;
 		}
 
-		double norma_zabranego = NORMA(1.0, procent_absorbowany, towar());
-		double norma_pozostawionego = NORMA(1.0, 1.0 - procent_absorbowany, towar());
+		fp_t norma_zabranego = NORMA(FP_JEDEN, procent_absorbowany, towar());
+		fp_t norma_pozostawionego = NORMA(FP_JEDEN, FP_JEDEN - procent_absorbowany, towar());
 
 		for(uint64_t i = 0; i < trwale.liczba_absorberow(); i++){
 			uint64_t indeks_absorbowany = trwale.indeksy_absorbowane[i];
@@ -574,21 +569,21 @@ struct spacer_losowy{
 		for (uint64_t i = 0; i < trwale.liczba_miernikow(); i++) {
 			uint64_t indeks_mierzony = trwale.indeksy_mierzone[i];
 			
-			//fp_typ losowe = losowosc_globalna::losowa_przecinkowa();
+			//fp_t losowe = losowosc_globalna::losowa_przecinkowa();
 			towar& mierzone = iteracja_do->wartosci[indeks_mierzony];
-			fp_typ prawdopodp = P(mierzone);
+			fp_t prawdopodp = P(mierzone);
 
 			
-			fp_typ cale = floor(prawdopodp);
-			fp_typ pozostale = prawdopodp - cale;
+			fp_t cale = floor(prawdopodp);
+			fp_t pozostale = prawdopodp - cale;
 
-			fp_typ losowe = abs(mierzone.Re) / sqrt(pozostale);
+			fp_t losowe = abs(mierzone.Re) / sqrt(pozostale);
 			if(prawdopodp < 1e-8){
-				losowe = jeden(fp_typ());
+				losowe = jeden(fp_t());
 			}
 
 			if(pozostale >= losowe) {
-				mierzone *= NORMA(prawdopodp, cale + jeden(fp_typ()), towar());
+				mierzone *= NORMA(prawdopodp, cale + jeden(fp_t()), towar());
 				//__debugbreak();
 			} else {
 				mierzone = jeden(towar()) * cale;
@@ -606,21 +601,21 @@ struct spacer_losowy{
 			iteracja_do = &iteracjaA;
 		}
 
-		double prawdopodobienstwo_pozostale = 0.0; // jest
+		fp_t prawdopodobienstwo_pozostale = 0.0; // jest
 		statyczny_wektor<towar>& wartosci = iteracja_z->wartosci;
 		for(uint64_t i = 0; i < wartosci.rozmiar; i++){
 			prawdopodobienstwo_pozostale += P(wartosci[i]);
 		}
 		iteracja_do->prawdopodobienstwo_poprzedniej = prawdopodobienstwo_pozostale;
 
-		double prawdopodobienstwo_zaabsorbowane = 0.0;
-		statyczny_wektor<double>& wartosci_zaabrosbowane = iteracja_z->wartosci_zaabsorbowane;
+		fp_t prawdopodobienstwo_zaabsorbowane = 0.0;
+		statyczny_wektor<fp_t>& wartosci_zaabrosbowane = iteracja_z->wartosci_zaabsorbowane;
 		for (uint64_t i = 0; i < wartosci_zaabrosbowane.rozmiar; i++) {
 			prawdopodobienstwo_zaabsorbowane += wartosci_zaabrosbowane[i];
 		}
 		iteracja_do->zaabsorbowane_poprzedniej = prawdopodobienstwo_zaabsorbowane;
 
-		double powinno_byc = trwale.poczatkowe_prawdopodobienstwo - prawdopodobienstwo_zaabsorbowane;
+		fp_t powinno_byc = trwale.poczatkowe_prawdopodobienstwo - prawdopodobienstwo_zaabsorbowane;
 		iteracja_do->norma_poprzedniej_iteracji = NORMA(prawdopodobienstwo_pozostale, powinno_byc, towar());
 	}
 
@@ -632,12 +627,12 @@ struct spacer_losowy{
 			iteracja_do = &iteracjaA;
 		}
 
-		double normalizujacy = iteracja_z->norma_poprzedniej_iteracji;
+		fp_t normalizujacy = iteracja_z->norma_poprzedniej_iteracji;
 		statyczny_wektor<towar>& wartosci = iteracja_z->wartosci;
 		for (uint64_t i = 0; i < wartosci.rozmiar; i++) {
 			wartosci[i] *= normalizujacy;
 		}
-		iteracja_z->norma_poprzedniej_iteracji = 1.0; // Aby TMCQ nie robi³a tego ponownie
+		iteracja_z->norma_poprzedniej_iteracji = FP_JEDEN; // Aby TMCQ nie robi³a tego ponownie
 	}
 
 	__HD__ void nie_normalizuj(){
@@ -654,16 +649,16 @@ struct spacer_losowy{
 
 		iteracja_do->zaabsorbowane_poprzedniej = iteracja_z->zaabsorbowane_poprzedniej;
 
-		iteracja_do->norma_poprzedniej_iteracji = 1.0;
+		iteracja_do->norma_poprzedniej_iteracji = FP_JEDEN;
 	}
 
-	__HD__ void dokoncz_iteracje(double delta_t){
+	__HD__ void dokoncz_iteracje(fp_t delta_t){
 		if(A){
 			iteracjaB.czas = iteracjaA.czas + delta_t;
-			//iteracjaA.norma_poprzedniej_iteracji = 1.0;
+			//iteracjaA.norma_poprzedniej_iteracji = FP_JEDEN;
 		} else {
 			iteracjaA.czas = iteracjaB.czas + delta_t;
-			//iteracjaB.norma_poprzedniej_iteracji = 1.0;
+			//iteracjaB.norma_poprzedniej_iteracji = FP_JEDEN;
 		}
 		A = !A;
 	}
@@ -678,7 +673,7 @@ struct spacer_losowy{
 		if (lokalizacja_na_device != nullptr) zburz_na_cuda();
 		A = true;
 		iteracjaA.zeruj();
-		iteracjaA.czas = 0.0f;
+		iteracjaA.czas = FP_ZERO;
 	}
 
 	~spacer_losowy(){
@@ -730,7 +725,7 @@ struct spacer_losowy{
 		// Przynosi czas i wspolczynnik normalizacji, prawdopodobienstwo, zaabsorbowane
 		sprawdzCudaErrors(cudaMemcpyAsync(&(zapisana->czas),
 			A ? &lokalizacja_na_device->iteracjaA.czas : &lokalizacja_na_device->iteracjaB.czas,
-			4 * sizeof(double), cudaMemcpyDeviceToHost, stream_pamiec_operacje));
+			4 * sizeof(fp_t), cudaMemcpyDeviceToHost, stream_pamiec_operacje));
 
 		ASSERT_Z_ERROR_MSG((iteracje_zapamietane.rozmiar + 1) <= iteracje_zapamietane.rozmiar_zmallocowany, "Brakuje miejsca na kolejna iteracje\n");
 		iteracje_zapamietane.pushback(zapisana);
@@ -768,7 +763,7 @@ struct spacer_losowy{
 
 };
 
-extern __HD__ double dot(const estetyczny_wektor<double>&, const estetyczny_wektor<double>&);
+extern __HD__ fp_t dot(const estetyczny_wektor<fp_t>&, const estetyczny_wektor<fp_t>&);
 extern __HD__ zesp dot(const estetyczny_wektor<zesp>&, const estetyczny_wektor<zesp>&);
 
 
@@ -799,7 +794,7 @@ __host__ void test_funkcji_tworzacych_spacery(transformata T, transformata boki)
 template<typename towar, typename transformata>
 __host__ void test_funkcji_tworzacych_spacery_2(transformata T, transformata boki);
 
-//template __host__ spacer::uklad_transformat<transformata_macierz<double>> uklad_transformat_dla_lini<transformata_macierz<double>>(uint32_t liczba_wierzcholkow, transformata_macierz<double>& srodek, transformata_macierz<double>& koniec);
+//template __host__ spacer::uklad_transformat<transformata_macierz<fp_t>> uklad_transformat_dla_lini<transformata_macierz<fp_t>>(uint32_t liczba_wierzcholkow, transformata_macierz<fp_t>& srodek, transformata_macierz<fp_t>& koniec);
 
 //template <typename towar, typename transformata>
 //__global__ void iteracje_na_gpu(spacer_losowy<towar, transformata>* lokalizacja_na_device, uint64_t ile_blokow, uint64_t liczba_iteracji = 1, uint64_t ile_prac_wykonac = 1);
@@ -815,9 +810,9 @@ constexpr int max_ilosc_watkow_w_bloku = 100;
 //	uint64_t liczba_iteracji = 1, uint64_t liczba_watkow = max_ilosc_watkow_w_bloku);
 
 template <typename towar, typename transformata>
-__host__ void iteracje_na_gpu(spacer_losowy<towar, transformata>& spacer, double delta_t,
+__host__ void iteracje_na_gpu(spacer_losowy<towar, transformata>& spacer, fp_t delta_t,
 	uint64_t liczba_iteracji, uint64_t ile_prac_na_watek, uint32_t ile_watkow_na_blok_max, uint32_t co_ile_zapisac, uint32_t co_ile_normalizuj = 0xFFFFFFFF, uint32_t co_ile_absorbuj = 1);
 
 template <typename towar, typename transformata>
-__host__ void proste_iteracje_na_gpu(spacer_losowy<towar, transformata>& spacer, double delta_t,
+__host__ void proste_iteracje_na_gpu(spacer_losowy<towar, transformata>& spacer, fp_t delta_t,
 	uint64_t liczba_iteracji, uint64_t ile_prac_na_watek, uint32_t ile_watkow_na_blok_max, uint32_t co_ile_zapisac);

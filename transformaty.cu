@@ -19,7 +19,7 @@ __HD__ transformata_macierz<towar> tensor(const transformata_macierz<towar>& a, 
 	return result;
 }
 
-template __HD__ transformata_macierz<double> tensor(const transformata_macierz<double>& a, const transformata_macierz<double>& b);
+template __HD__ transformata_macierz<fp_t> tensor(const transformata_macierz<fp_t>& a, const transformata_macierz<fp_t>& b);
 template __HD__ transformata_macierz<zesp> tensor(const transformata_macierz<zesp>& a, const transformata_macierz<zesp>& b);
 
 template<typename towar>
@@ -38,7 +38,7 @@ __HD__ transformata_macierz<towar> mnoz(const transformata_macierz<towar>& a, co
 	return result;
 }
 
-template __HD__ transformata_macierz<double> mnoz(const transformata_macierz<double>& a, const transformata_macierz<double>& b);
+template __HD__ transformata_macierz<fp_t> mnoz(const transformata_macierz<fp_t>& a, const transformata_macierz<fp_t>& b);
 template __HD__ transformata_macierz<zesp> mnoz(const transformata_macierz<zesp>&a, const transformata_macierz<zesp>&b);
 
 
@@ -58,18 +58,18 @@ __HD__ bool sprawdz_poprawnosc(const transformata_macierz<zesp>& x) {
 	bool ret = true;
 	for (uint8_t i = 0; i < temp.arrnosc; i++) {
 		for (uint8_t j = 0; j < temp.arrnosc; j++) {
-			if (abs(temp(i, j).Im) > tolerancja){
+			if (abs(temp(i, j).Im) > fp_tolerancja){
 					ret = false;
 					IF_HOST(printf("Na pozycji (%d, %d), w Im nie jest zero: %lf\n", i, j, temp(i, j).Im);)
 				}
 			if (i == j) {
-				if (abs(temp(i, j).Re - 1.0) > tolerancja){
+				if (abs(temp(i, j).Re - 1.0) > fp_tolerancja){
 					ret = false;
 					IF_HOST(printf("Na pozycji (%d, %d), w Im nie jest jeden: %lf\n", i, j, temp(i, j).Re);)
 				}
 			}
 			else {
-				if (abs(temp(i, j).Re) > tolerancja){
+				if (abs(temp(i, j).Re) > fp_tolerancja){
 					ret = false;
 					IF_HOST(printf("Na pozycji (%d, %d), w Re nie jest zero: %lf\n", i, j, temp(i, j).Re);)
 				}
@@ -82,15 +82,15 @@ __HD__ bool sprawdz_poprawnosc(const transformata_macierz<zesp>& x) {
 	return ret;
 }
 
-__HD__ bool sprawdz_poprawnosc(const transformata_macierz<double>& x) {
+__HD__ bool sprawdz_poprawnosc(const transformata_macierz<fp_t>& x) {
 	// sprawdzenie poprawnosci macierzy transformaty klasycznie
 	bool ret = true;
 	for (uint8_t k = 0; k < x.arrnosc; k++) {
-		double suma = 0.0;
+		fp_t suma = 0.0;
 		for (uint8_t w = 0; w < x.arrnosc; w++) {
 			suma += x(w, k);
 		}
-		if (abs(suma - 1.0) > tolerancja) {
+		if (abs(suma - 1.0) > fp_tolerancja) {
 			ret = false;
 			IF_HOST(printf("Kolumna %d: odbiega od poprawnosci o: %.17lf\n", k, suma - 1.0);)
 		}

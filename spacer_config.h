@@ -1,14 +1,27 @@
 #pragma once
 
-typedef double fp_typ;
+typedef float fp_t;
 
-constexpr inline __HD__ fp_typ zero(fp_typ) {
-	return ((fp_typ)0.0);
+constexpr inline __HD__ fp_t zero(fp_t) {
+	return ((fp_t)0.0);
 }
 
-constexpr inline __HD__ fp_typ jeden(fp_typ) {
-	return ((fp_typ)1.0);
+#undef FP_ZERO
+#define FP_ZERO zero(fp_t())
+
+constexpr inline __HD__ fp_t jeden(fp_t) {
+	return ((fp_t)1.0);
 }
+
+#define FP_JEDEN jeden(fp_t())
+
+typedef fp_t prob_t;
+
+constexpr fp_t fp_tolerancja = (fp_t)1.0e-6;
+
+#define FP_F "f"
+
+#define FP_POS_F ".9f" 
 
 namespace config{
 
@@ -22,4 +35,9 @@ constexpr bool absorbcja = ABSORBCJA;
 constexpr bool mierzenie_rozproszone = MIERZENIE_ROZPROSZONE;
 
 }
+
+typedef uint32_t ID_W; // typ indeksowania wierzcholków
+typedef uint8_t ID_K;  // typ indeksowania kube³ków
+
+typedef ID_K arrnosc_t;
 
