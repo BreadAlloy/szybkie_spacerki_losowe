@@ -2,6 +2,9 @@
 
 cmake_minimum_required(VERSION 3.3.0) # Bo to mam
 
+project("SzybkieSpacerkiLosowe"  LANGUAGES CXX CUDA C)
+# C dla SOIL
+
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
@@ -98,6 +101,7 @@ set(IMPLOT3D_SOURCE
     ${implot3d_SOURCE_DIR}/implot3d_items.cpp
     ${implot3d_SOURCE_DIR}/implot3d_meshes.cpp
 )
+
 add_library(implot3d STATIC ${IMPLOT3D_SOURCE})
 target_include_directories(implot3d PUBLIC ${implot3d_SOURCE_DIR})
 target_link_libraries(implot3d PUBLIC imgui)
@@ -109,12 +113,17 @@ if(IMPLOT3D_STRICT_WARNINGS)
     endif()
 endif()
 
+FetchContent_Declare(
+  googletest
+  URL https://github.com/google/googletest/archive/03597a01ee50ed33e9dfd640b249b4be3799d395.zip
+)
+# For Windows: Prevent overriding the parent project's compiler/linker settings
+set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+FetchContent_MakeAvailable(googletest)
+
 
 
 # ---=== PROJECT COMPILE ===---
-
-project("SzybkieSpacerkiLosowe"  LANGUAGES CXX CUDA C)
-# C dla SOIL
 
 find_package( CUDA  REQUIRED )
 
@@ -215,6 +224,106 @@ target_include_directories(szybki_spacerek PUBLIC
 if(APPLE)
     target_compile_definitions(SzybkieSpacerkiLosowe PRIVATE GL_SILENCE_DEPRECATION)
 endif()
+
+
+
+# ---=== UNIT TESTS AND BENCHMARKS ===---
+enable_testing()
+
+set( tests_INCLUDE_DIRS
+    ${imgui_INCLUDE_DIRS}
+    ${spacer_GLOBAL_INCLUDE_DIRS}
+    ${CMAKE_CURRENT_SOURCE_DIR}/eksperymenty
+    ${CMAKE_CURRENT_SOURCE_DIR}/szybki_spacer_pomoce
+)
+
+
+
+add_executable(
+  liczba_iteracji_skalowanie_bench
+  szybki_spacer_tests_i_bench/liczba_iteracji_skalowanie_bench.cc
+)
+
+target_include_directories(liczba_iteracji_skalowanie_bench PUBLIC
+    ${tests_INCLUDE_DIRS}
+)
+
+target_link_libraries(
+  liczba_iteracji_skalowanie_bench
+  szybki_spacer_lib
+  szybki_spacer_pomoce
+  implot implot3d
+  GTest::gtest_main
+)
+
+
+
+add_executable(
+  cuda_parametry_bench
+  szybki_spacer_tests_i_bench/cuda_parametry_bench.cc
+)
+
+target_include_directories(cuda_parametry_bench PUBLIC
+    ${tests_INCLUDE_DIRS}
+)
+
+target_link_libraries(
+  cuda_parametry_bench
+  szybki_spacer_lib
+  szybki_spacer_pomoce
+  implot implot3d
+  GTest::gtest_main
+)
+
+
+
+add_executable(
+  rozmiar_grafu_bench
+  szybki_spacer_tests_i_bench/rozmiar_grafu_bench.cc
+)
+
+target_include_directories(rozmiar_grafu_bench PUBLIC
+    ${tests_INCLUDE_DIRS}
+)
+
+target_link_libraries(
+  rozmiar_grafu_bench
+  szybki_spacer_lib
+  szybki_spacer_pomoce
+  implot implot3d
+  GTest::gtest_main
+)
+
+
+
+add_executable(
+  czy_cuda_taka_jak_cpu_test
+  szybki_spacer_tests_i_bench/czy_cuda_taka_jak_cpu_test.cc
+)
+
+target_include_directories(czy_cuda_taka_jak_cpu_test PUBLIC
+    ${tests_INCLUDE_DIRS}
+)
+
+target_link_libraries(
+  czy_cuda_taka_jak_cpu_test
+  szybki_spacer_lib
+  szybki_spacer_pomoce
+  implot implot3d
+  GTest::gtest_main
+)
+
+
+
+include(GoogleTest)
+gtest_discover_tests(liczba_iteracji_skalowanie_bench)
+gtest_discover_tests(cuda_parametry_bench)
+gtest_discover_tests(rozmiar_grafu_bench)
+
+gtest_discover_tests(czy_cuda_taka_jak_cpu_test)
+
+
+
 
 # So that clangd sees things installed by cmake
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)

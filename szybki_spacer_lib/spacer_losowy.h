@@ -761,6 +761,111 @@ struct spacer_losowy{
 		stream_normalizacja = 0;
 	}
 
+
+	__host__ size_t rozmiar_w_pamieci() {
+		// minej/wiecej dok³adnie 
+
+		ASSERT_Z_ERROR_MSG(config::absorbcja == false, "Nie supportowny config\n");
+
+		size_t size = sizeof(spacer_losowy<towar, transformata>);
+
+		size += iteracjaA.wartosci.bajt_rozmiar();
+		size += iteracjaB.wartosci.bajt_rozmiar();
+
+		size += trwale.gdzie_wyslac.bajt_rozmiar();
+		size += trwale.wierzcholki.bajt_rozmiar();
+		size += trwale.znajdywacz_wierzcholka.bajt_rozmiar();
+
+		// Zak³adam, ¿e transformat jest w miarê ma³o
+
+		return size;
+	}
+
+	__host__ size_t pamiec_czytana_w_iteracji() {
+		// minej/wiecej dok³adnie 
+		// Wszystko czytane ~1 raz na iteracje
+
+		ASSERT_Z_ERROR_MSG(config::absorbcja == false, "Nie supportowny config\n");
+
+		size_t size = sizeof(spacer_losowy<towar, transformata>);
+
+		size += iteracjaA.wartosci.bajt_rozmiar();
+
+		size += trwale.gdzie_wyslac.bajt_rozmiar();
+		size += trwale.wierzcholki.bajt_rozmiar();
+		size += trwale.znajdywacz_wierzcholka.bajt_rozmiar();
+
+		// Zak³adam, ¿e transformat jest w miarê ma³o
+
+		return size;
+	}
+
+	__host__ size_t pamiec_zapisana_w_iteracji() {
+		// minej/wiecej dok³adnie 
+		// Wszystko zapisane raz na iteracje
+
+		ASSERT_Z_ERROR_MSG(config::absorbcja == false, "Nie supportowny config");
+
+		return iteracjaB.wartosci.bajt_rozmiar();
+	}
+
+	__host__ std::pair<double, double> theoretical_performance(double liczba_iteracji) {
+		ASSERT_Z_ERROR_MSG(config::absorbcja == false, "Nie supportowny config\n");
+		ASSERT_Z_ERROR_MSG(config::normalizacja == false, "Nie supportowny config\n");
+		//ASSERT_Z_ERROR_MSG(config::mierzenie_rozproszone == false, "Nie supportowny config");
+		//ASSERT_Z_ERROR_MSG(std::is_same<towar, zesp>::value() == true, "Supportowane tylko zespolone\n");
+
+		constexpr double memory_size = double(8ULL * 1024ULL * 1024ULL * 1024ULL); // 8 GB
+		constexpr double memory_bandwith = double(448ULL * 1024ULL * 1024ULL * 1024ULL); // 448 GB/s
+		constexpr double FLOPs = double(20310ULL * 1024ULL * 1024ULL * 1024ULL); // 20310 GFLOPs (FP32)
+
+		double pamiec_zmallokowana = double(rozmiar_w_pamieci());
+		if(pamiec_zmallokowana > memory_size) std::pair<double, double>(1.0e60, 1.0e60);
+			
+		// -----------------------------------------------------------------------
+
+		double pamiec_czytana_na_iteracje = double(pamiec_czytana_w_iteracji());
+		double pamiec_zapisana_na_iteracje = double(pamiec_zapisana_w_iteracji());
+
+		double pamiec_uzyta_w_iteracji = pamiec_czytana_na_iteracje + pamiec_zapisana_na_iteracje;
+		
+		double pamiec_uzyta_w_iteracjach = liczba_iteracji * pamiec_uzyta_w_iteracji;
+		// zak³adam brak cachowania
+
+		double min_czas_wedlug_predkosci_pamieci = pamiec_uzyta_w_iteracjach / memory_bandwith; //[s]
+		
+		// ----------------------------------------------------------------------	
+		constexpr uint32_t liczba_fp_dodawan_na_zesp_dodanie = 2;
+		constexpr uint32_t liczba_fp_mnozen_na_zesp_dodanie = 0;
+		constexpr uint32_t liczba_fp_dodawan_na_zesp_mnozenie = 2;
+		constexpr uint32_t liczba_fp_mnozen_na_zesp_mnozenie = 4;
+
+		uint32_t liczba_dodawan_przy_macierzy = 0;
+		uint32_t liczba_mnozen_przy_macierzy = 0;
+		for(ID_W i = 0; i < trwale.liczba_wierzcholkow(); i++){
+			spacer::wierzcholek& wierzcholek = trwale.wierzcholki[i];
+
+			uint32_t arrnosc_macierzy = (uint32_t)wierzcholek.liczba_kierunkow;
+
+			liczba_mnozen_przy_macierzy += arrnosc_macierzy * arrnosc_macierzy;
+			liczba_dodawan_przy_macierzy += arrnosc_macierzy * arrnosc_macierzy;
+		}
+
+		uint32_t liczba_fp_dodawan_na_iteracje = 
+			liczba_dodawan_przy_macierzy * liczba_fp_dodawan_na_zesp_dodanie + 
+			liczba_mnozen_przy_macierzy * liczba_fp_dodawan_na_zesp_mnozenie;
+
+		uint32_t liczba_fp_mnozen_na_iteracje =
+			liczba_dodawan_przy_macierzy * liczba_fp_mnozen_na_zesp_dodanie +
+			liczba_mnozen_przy_macierzy * liczba_fp_mnozen_na_zesp_mnozenie;
+
+		uint32_t liczba_fp_ops_na_iteracje = liczba_fp_dodawan_na_iteracje + liczba_fp_mnozen_na_iteracje;
+
+		double FLOP_w_iteracjach = liczba_fp_ops_na_iteracje * liczba_iteracji;
+		double min_czas_wg_FLOPs = FLOP_w_iteracjach / FLOPs; //[s]
+
+		return std::pair<double, double>(min_czas_wedlug_predkosci_pamieci * 1000.0, min_czas_wg_FLOPs * 1000.0);
+	}
 };
 
 extern __HD__ fp_t dot(const estetyczny_wektor<fp_t>&, const estetyczny_wektor<fp_t>&);
@@ -816,3 +921,7 @@ __host__ void iteracje_na_gpu(spacer_losowy<towar, transformata>& spacer, fp_t d
 template <typename towar, typename transformata>
 __host__ void proste_iteracje_na_gpu(spacer_losowy<towar, transformata>& spacer, fp_t delta_t,
 	uint64_t liczba_iteracji, uint64_t ile_prac_na_watek, uint32_t ile_watkow_na_blok_max, uint32_t co_ile_zapisac);
+
+template<typename transformata>
+__host__ spacer::uklad_transformat<transformata> uklad_transformat_wszystko_to_samo(
+	ID_W liczba_wierzcholkow, transformata& T);

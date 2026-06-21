@@ -13,6 +13,8 @@
 
 #include "implot.h"
 
+#include "implot3d.h"
+
 #pragma warning(push, 0)
 
 #define GL_SILENCE_DEPRECATION
@@ -25,6 +27,7 @@
 #pragma warning(pop)
 
 #include <cstdio>
+#include <string>
 
 static void glfw_error_callback(int error, const char* description)
 {
@@ -35,7 +38,7 @@ bool show_demo_window = true;
 bool show_another_window = false;
 ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
-int imgui_i_grafika_setup(GLFWwindow*& window, ImGuiIO* io){
+int imgui_i_grafika_setup(GLFWwindow*& window, ImGuiIO* io, std::string nazwa_okna){
 	glfwSetErrorCallback(glfw_error_callback);
 	if (!glfwInit())
 		return 1;
@@ -49,7 +52,7 @@ int imgui_i_grafika_setup(GLFWwindow*& window, ImGuiIO* io){
 
 
 	// Create window with graphics context
-	window = glfwCreateWindow(1000, 1000, "Szybkie spacerki losowe", nullptr, nullptr);
+	window = glfwCreateWindow(1000, 1000, nazwa_okna.c_str(), nullptr, nullptr);
 	if (window == nullptr)
 		return 1;
 	glfwMakeContextCurrent(window);
@@ -63,6 +66,7 @@ int imgui_i_grafika_setup(GLFWwindow*& window, ImGuiIO* io){
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
 	ImPlot::CreateContext();
+	ImPlot3D::CreateContext();
 	(*io) = ImGui::GetIO();
 	//io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
 	//io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls

@@ -45,7 +45,7 @@ int main(int argc, char** argv)
     static_assert(sizeof(void*) == 8, "Powinno byc 8 bytow w pointerze");
 
     GLFWwindow* window; ImGuiIO* io = new ImGuiIO;
-    int ret = imgui_i_grafika_setup(window, io);
+    int ret = imgui_i_grafika_setup(window, io, "Szybkie spacerki losowe");
     if(ret != 0) return ret;
     //ImGuiIO& io = temp;
 
@@ -86,6 +86,7 @@ int main(int argc, char** argv)
         if (show_demo_window){
             ImGui::ShowDemoWindow(&show_demo_window);
             ImPlot::ShowDemoWindow(&show_demo_window);
+            ImPlot3D::ShowDemoWindow(&show_demo_window);
         }
 
         //TSKD.pokaz_okno(*io);
@@ -113,6 +114,7 @@ int main(int argc, char** argv)
     // Cleanup
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
+    ImPlot3D::DestroyContext();
     ImPlot::DestroyContext();
     ImGui::DestroyContext();
     delete io;

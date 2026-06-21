@@ -235,3 +235,21 @@ __host__ spacer_losowy<towar, transformata> spacer_linia_2_czastki(
 
 template __host__ spacer_losowy<zesp, TMDQ> spacer_linia_2_czastki(
 	uint32_t liczba_wierzcholkow, TMDQ T_te_same_pozycje, TMDQ T_rozne_pozycje, graf* linia_tensorowana);
+
+template<typename transformata>
+__host__ spacer::uklad_transformat<transformata> uklad_transformat_wszystko_to_samo(
+	ID_W liczba_wierzcholkow, transformata& T) {
+
+	spacer::uklad_transformat<transformata> uklad(liczba_wierzcholkow);
+
+	uint64_t id = uklad.dodaj_transformate(T);
+
+	for (ID_W i = 0; i < liczba_wierzcholkow; i++) {
+		uklad.podepnij_transformate(id, i);
+	}
+
+	return uklad;
+}
+
+template __host__ spacer::uklad_transformat<TMDQ> uklad_transformat_wszystko_to_samo(
+	ID_W liczba_wierzcholkow, TMDQ& T);

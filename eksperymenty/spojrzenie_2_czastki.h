@@ -37,7 +37,7 @@ struct linia_TMDQ{
 	std::vector<statyczny_wektor<prob_t>> prawdopodob_wysladowane_1;
 	std::vector<statyczny_wektor<prob_t>> prawdopodob_wysladowane_2;
 
-	static constexpr uint32_t skalar_instancji = 2;
+	static constexpr uint32_t skalar_instancji = 1;
 	static constexpr uint32_t liczba_wierzcholkow = 100 * skalar_instancji + 1;
 
 	static constexpr uint32_t pozycja_poczatkowa_1 = 5 * skalar_instancji;
