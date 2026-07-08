@@ -16,7 +16,7 @@ set(VERBOSE true)
 # cmake_policy(SET CMP0141 NEW)
 # set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT "$<$<CONFIG:Debug,RelWithDebInfo>:Embedded>")
 
-
+set(CMAKE_CUDA_FLAGS ${CMAKE_CUDA_FLAGS} ${CMAKE_CUDA_DEBUG_FLAGS})  # enable cuda-gdb
 
 # ---=== INSTALL DEPENDENCIES ===---
 

@@ -15,7 +15,7 @@ typedef TMDQ transformata_benchowana;
 #define TEMPLATY_BENCHOWANE <towar_benchowany, transformata_benchowana>
 typedef spacer_losowy TEMPLATY_BENCHOWANE spacer_benchowany;
 
-constexpr uint32_t liczba_instancji = 6;
+constexpr uint32_t liczba_instancji = 2;
 constexpr uint32_t benchowane_liczby_iteracji[] = 
     {0, 500, 1000, 2000, 5000, 10000};
 

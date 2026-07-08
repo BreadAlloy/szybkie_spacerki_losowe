@@ -24,6 +24,7 @@ struct statyczny_wektor{ // wektor automatycznie mallocujacy i zwalnijacy, nie m
 	__HD__ void malloc(size_t nowy_rozmiar) { // rozmiar jest w iloœci obiektów typu wskaŸnika
 		ASSERT_Z_ERROR_MSG(PAMIEC == nullptr, "Coœ jest w pamieci\n");
 		rozmiar = nowy_rozmiar;
+		if (rozmiar == 0) return;
 		PAMIEC = (typ_wskaznika*)(::malloc(bajt_rozmiar()));
 		ASSERT_Z_ERROR_MSG(PAMIEC != nullptr, "malloc zawiodl\n");
 	}

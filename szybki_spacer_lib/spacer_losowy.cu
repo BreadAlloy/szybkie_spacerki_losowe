@@ -2,7 +2,8 @@
 
 #include "transformaty_wyspecializowane.h"
 
-//#include <cooperative_groups.h> nie mam compute compatibility 9.0 :( cluster.sync()
+#include <cooperative_groups.h> //nie mam compute compatibility 9.0 :( cluster.sync()
+#include <cooperative_groups/memcpy_async.h>
 
 #include "wspolne.cuh"
 
@@ -129,6 +130,158 @@ __global__ void iteracja_na_gpu(spacer::dane_trwale<transformata>* trwale, space
 		transformata& transformer = trwale->transformaty[wierzcholek.transformer];
 
 		transformer.transformuj(*trwale, wierzcholek, *iteracja_z, *iteracja_do, IP.index_w_wierzcholku, IP.index_wierzcholka);
+		//__syncthreads(); // mo¿e w niektórych przypadkach ledwo przyœpiesza
+	}
+}
+
+template <typename towar, typename transformata>
+__global__ void rzut_moneta(spacer::dane_trwale<transformata>* trwale, towar* wektor_stanu_z, towar* wektor_stanu_do, przydzielacz_prac przydzial, spacer::idW_t rozmiar_pamieci_dzielonej) {
+	namespace cg = cooperative_groups;
+
+	extern __shared__ towar cache[];
+	__shared__ towar* wektor_read_cache;
+	__shared__ towar* wektor_write_cache;
+
+	__shared__ spacer::idW_t wektor_cache_offset;
+	__shared__ spacer::idW_t rozmiar_cacheowany;
+
+	__shared__ spacer::idW_t robione_od;
+	__shared__ spacer::idW_t offset_robienia;
+	__shared__ spacer::idW_t rozmiar_robienia;
+
+	cg::thread_block my_group = cg::this_thread_block();
+
+	cg::invoke_one(my_group, [&]() {
+		wektor_read_cache = cache;
+		wektor_write_cache = cache + rozmiar_pamieci_dzielonej/2;
+		});
+
+	//cg::wait(my_group);
+	cg::sync(my_group);
+
+	for (uint64_t j = 0; j < przydzial.ile_prac; j++) {
+		cg::invoke_one(my_group, 
+			[&, trwale, j]() {
+
+			uint64_t idx_pracownika = przydzial.max_index_pracownika(j, blockIdx.x);
+			if (idx_pracownika >= przydzial.ile_prac_sumarycznie) {
+				// jeœli siêgasz do koñca to robisz do koñca
+				idx_pracownika = przydzial.ile_prac_sumarycznie - 1;
+			}
+
+			spacer::info_pracownika IP = trwale->znajdz_wierzcholek(idx_pracownika);
+			spacer::idW_t cache_do = trwale->wierzcholki[IP.index_wierzcholka].start_wartosci
+			+ (spacer::idW_t)trwale->wierzcholki[IP.index_wierzcholka].liczba_kierunkow;
+			
+			spacer::idW_t robione_do = trwale->wierzcholki[IP.index_wierzcholka].start_wartosci + (spacer::idW_t)IP.index_w_wierzcholku + 1;
+
+
+			spacer::idW_t cache_od;
+			
+			idx_pracownika = przydzial.min_index_pracownika(j, blockIdx.x);
+			if (idx_pracownika >= przydzial.ile_prac_sumarycznie) {
+				// jeœli zaczynasz za koñcem to nic nie robisz
+				cache_od = cache_do;
+				offset_robienia = (spacer::idW_t)0;
+				robione_od = cache_od + offset_robienia;;
+			}
+			else {
+				IP = trwale->znajdz_wierzcholek(idx_pracownika);
+				cache_od = trwale->wierzcholki[IP.index_wierzcholka].start_wartosci;
+				offset_robienia = (spacer::idW_t)IP.index_w_wierzcholku;
+				robione_od = cache_od + offset_robienia;
+			}
+
+			wektor_cache_offset = cache_od;
+			rozmiar_cacheowany = (cache_do - cache_od);
+
+			rozmiar_robienia = (robione_do - robione_od);
+
+			//spacer_assert(rozmiar_robienia <= rozmiar_cacheowany);
+		});
+
+		//cg::wait(my_group);
+		cg::sync(my_group);
+
+		cg::memcpy_async(
+			my_group,
+			wektor_read_cache,
+			wektor_stanu_z + wektor_cache_offset,
+			rozmiar_cacheowany * sizeof(towar));
+
+		cg::wait(my_group);
+		//cg::sync(my_group);
+
+		uint64_t index_pracownika = przydzial.index_pracownika(j, threadIdx.x, blockIdx.x);
+
+		if (index_pracownika < przydzial.ile_prac_sumarycznie) {
+			spacer::info_pracownika IP = trwale->znajdz_wierzcholek(index_pracownika);
+
+			spacer::wierzcholek& wierzcholek = trwale->wierzcholki[IP.index_wierzcholka];
+			transformata& transformer = trwale->transformaty[wierzcholek.transformer];
+
+			//spacer_assert(wierzcholek.start_wartosci >= wektor_cache_offset);
+			//spacer_assert(wierzcholek.start_wartosci - wektor_cache_offset < rozmiar_cacheowany);
+			//spacer_assert(wierzcholek.start_wartosci + (spacer::idW_t)IP.index_w_wierzcholku >= robione_od);
+			//spacer_assert(wierzcholek.start_wartosci + (spacer::idW_t)IP.index_w_wierzcholku >= cache_od + offset_robienia);
+			//spacer_assert(cache_od + offset_robienia == robione_od);
+			//spacer_assert(wierzcholek.start_wartosci + (spacer::idW_t)IP.index_w_wierzcholku < robione_od + rozmiar_robienia);
+
+			transformer.transformuj_proste(
+				//wektor_stanu_z + wierzcholek.start_wartosci,
+				//wektor_stanu_do + wierzcholek.start_wartosci,
+				//IP.index_w_wierzcholku);
+				&(wektor_read_cache[wierzcholek.start_wartosci - wektor_cache_offset]),
+				&(wektor_write_cache[wierzcholek.start_wartosci - wektor_cache_offset]),
+				IP.index_w_wierzcholku);
+		}
+
+		//cg::wait(my_group);
+		cg::sync(my_group);
+
+		cg::memcpy_async(
+			my_group,
+			wektor_stanu_do + robione_od,
+			wektor_write_cache + offset_robienia,
+			rozmiar_robienia * sizeof(towar));
+
+		cg::wait(my_group);
+		//cg::sync(my_group);
+	}
+}
+
+template <typename towar, typename transformata>
+__global__ void rzut_moneta(spacer::dane_trwale<transformata>* trwale, towar* wektor_stanu_z, towar* wektor_stanu_do, przydzielacz_prac przydzial) {
+	for (uint64_t j = 0; j < przydzial.ile_prac; j++) {
+		uint64_t index_pracownika = przydzial.index_pracownika(j, threadIdx.x, blockIdx.x);
+
+		if (index_pracownika < przydzial.ile_prac_sumarycznie) {
+			spacer::info_pracownika IP = trwale->znajdz_wierzcholek(index_pracownika);
+
+			spacer::wierzcholek& wierzcholek = trwale->wierzcholki[IP.index_wierzcholka];
+			transformata& transformer = trwale->transformaty[wierzcholek.transformer];
+
+			transformer.transformuj_proste(
+				wektor_stanu_z + wierzcholek.start_wartosci,
+				wektor_stanu_do + wierzcholek.start_wartosci,
+				IP.index_w_wierzcholku);
+		}
+	}
+}
+
+template <typename towar, typename transformata>
+__global__ void permutacja(spacer::dane_trwale<transformata>* trwale, towar* wektor_stanu_z, towar* wektor_stanu_do, przydzielacz_prac przydzial) {
+
+	for (uint64_t j = 0; j < przydzial.ile_prac; j++) {
+		uint64_t index_pracownika = przydzial.index_pracownika(j, threadIdx.x, blockIdx.x);
+
+		if (index_pracownika >= przydzial.ile_prac_sumarycznie) {
+			//printf("Nadmierny watek: %d", threadIdx.x);
+			break;
+		}
+
+		wektor_stanu_do[index_pracownika] = wektor_stanu_z[trwale->gdzie_wyslac[index_pracownika]];
+		//__syncthreads(); // mo¿e w niektórych przypadkach ledwo przyœpiesza
 	}
 }
 
@@ -273,6 +426,57 @@ __host__ void proste_iteracje_na_gpu(spacer_losowy<towar, transformata>& spacer,
 }
 
 template __host__ void proste_iteracje_na_gpu<zesp, TMDQ>(spacer_losowy<zesp, TMDQ>& spacer, fp_t delta_t,
+	uint64_t liczba_iteracji, uint64_t ile_prac_na_watek, uint32_t ile_watkow_na_blok_max, uint32_t co_ile_zapisac);
+
+template <typename towar, typename transformata>
+__host__ void podzielone_iteracje_na_gpu(spacer_losowy<towar, transformata>& spacer, fp_t delta_t,
+	uint64_t liczba_iteracji, uint64_t ile_prac_na_watek, uint32_t ile_watkow_na_blok_max, uint32_t co_ile_zapisac) {
+	// spacer nie korzysta z sumy, normalizacji, absorbcji
+
+	przydzielacz_prac przydzielacz_rzut_moneta(spacer.trwale.ile_prac(), ile_prac_na_watek, ile_watkow_na_blok_max);
+	przydzielacz_prac przydzielacz_permutacja(spacer.trwale.liczba_kubelkow(), ile_prac_na_watek, ile_watkow_na_blok_max);
+
+	//spacer::idW_t max_rozmiar_pamieci_dzielonej = 2 * spacer.cache_wektora_max_size(przydzielacz_iteracja.ile_watkow);
+
+	//Vprintf("Wolam bloki z %d liczb zespolonych w pamieci dzielonej\n", max_rozmiar_pamieci_dzielonej);
+
+	//Wskazniki poprawne na GPU
+	towar* wektor_stanu_A = spacer.iteracjaA.wartosci.pamiec_device;
+	towar* wektor_stanu_B = spacer.iteracjaB.wartosci.pamiec_device;
+	spacer::dane_trwale<transformata>* trwale = &(spacer.lokalizacja_na_device->trwale);
+	for (uint32_t i = 0; i < liczba_iteracji; i++) {
+
+		spacer.A = true;
+		if (i % co_ile_zapisac == 0) {
+			sprawdzCudaErrors(cudaStreamSynchronize(spacer.stream_iteracja));
+			sprawdzCudaErrors(cudaGetLastError());
+			spacer.zapisz_iteracje_z_cuda();
+			sprawdzCudaErrors(cudaStreamSynchronize(spacer.stream_pamiec_operacje));
+			sprawdzCudaErrors(cudaGetLastError());
+		}
+
+		rzut_moneta<towar, transformata>start_kernel(przydzielacz_rzut_moneta, /*sizeof(towar) * max_rozmiar_pamieci_dzielonej*/ 0, spacer.stream_iteracja)(
+			trwale, wektor_stanu_A, wektor_stanu_B, przydzielacz_rzut_moneta);
+		permutacja<towar, transformata>start_kernel(przydzielacz_permutacja, 0, spacer.stream_iteracja)(
+			trwale, wektor_stanu_B, wektor_stanu_A, przydzielacz_permutacja);
+
+
+		spacer.iteracjaA.czas += delta_t;
+		//spacer.dokoncz_iteracje(delta_t);
+		//spacer.A = true;
+		zakoncz_iteracje<towar, transformata> <<<1, 1, 0, spacer.stream_iteracja>>> (&(spacer.lokalizacja_na_device->iteracjaA), spacer.iteracjaA.czas);
+	}
+	sprawdzCudaErrors(cudaStreamSynchronize(spacer.stream_iteracja));
+	sprawdzCudaErrors(cudaStreamSynchronize(spacer.stream_pamiec_operacje));
+	sprawdzCudaErrors(cudaGetLastError());
+}
+
+template __host__ void 
+podzielone_iteracje_na_gpu(spacer_losowy<zesp, TMDQ>& spacer, fp_t delta_t,
+	uint64_t liczba_iteracji, uint64_t ile_prac_na_watek, uint32_t ile_watkow_na_blok_max, uint32_t co_ile_zapisac);
+
+template __host__ void
+podzielone_iteracje_na_gpu(spacer_losowy<zesp, TMSQ>& spacer, fp_t delta_t,
 	uint64_t liczba_iteracji, uint64_t ile_prac_na_watek, uint32_t ile_watkow_na_blok_max, uint32_t co_ile_zapisac);
 
 __HD__ void testy_macierzy() {

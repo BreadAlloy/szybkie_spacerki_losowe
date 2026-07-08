@@ -80,10 +80,19 @@ struct przydzielacz_prac {
 
 	}
 
-	__device__ __forceinline__ uint64_t index_pracownika(uint64_t index_pracy, uint64_t index_watka, uint64_t index_bloku) {
+	__device__ __forceinline__ uint64_t index_pracownika(const uint64_t index_pracy, const uint64_t index_watka, const uint64_t index_bloku) const {
 		return ile_watkow * (ile_prac * index_bloku + index_pracy) + index_watka;
 		//return ile_prac * (ile_watkow * index_bloku + index_watka) + index_pracy; // o wiele gorsze
 	}
+
+	__device__ __forceinline__ uint64_t max_index_pracownika(const uint64_t index_pracy, const uint64_t index_bloku) const {
+		return ile_watkow * (ile_prac * index_bloku + index_pracy) + (ile_watkow - 1ULL);
+	}
+
+	__device__ __forceinline__ uint64_t min_index_pracownika(const uint64_t index_pracy, const uint64_t index_bloku) const {
+		return ile_watkow * (ile_prac * index_bloku + index_pracy) + 0ULL;
+	}
+
 };
 
 #define start_kernel(przydzielacz, rozmiar_pamieci_dzielonej, stream) <<<(uint32_t)przydzielacz.ile_blokow, (uint32_t)przydzielacz.ile_watkow, rozmiar_pamieci_dzielonej, stream>>>

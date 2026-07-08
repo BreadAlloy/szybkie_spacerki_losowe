@@ -253,3 +253,6 @@ __host__ spacer::uklad_transformat<transformata> uklad_transformat_wszystko_to_s
 
 template __host__ spacer::uklad_transformat<TMDQ> uklad_transformat_wszystko_to_samo(
 	ID_W liczba_wierzcholkow, TMDQ& T);
+
+template __host__ spacer::uklad_transformat<TMSQ> uklad_transformat_wszystko_to_samo(
+	ID_W liczba_wierzcholkow, TMSQ& T);

@@ -144,6 +144,30 @@ namespace grafowe { //rzeczy potrzebne do definicji grafu
 	};
 };
 
+struct indekser_warstwowy{
+	ID_K liczba_warstw;
+	ID_K liczba_kubelkow_na_warstwe;	
+
+	indekser_warstwowy(ID_K liczba_warstw = 0, ID_K liczba_kubelkow_na_warstwe = 0)
+	: liczba_warstw(liczba_warstw), liczba_kubelkow_na_warstwe(liczba_kubelkow_na_warstwe)
+	{}
+
+	ID_K start_warstwy(ID_K idx_warstwy){
+		ASSERT_Z_ERROR_MSG(idx_warstwy < liczba_warstw, "index warstwy poza liczba warstw\n");
+		return liczba_kubelkow_na_warstwe * idx_warstwy;
+	}
+
+	ID_K nastepna_warstwa(ID_K idx_warstwy) {
+		ASSERT_Z_ERROR_MSG(idx_warstwy < liczba_warstw, "index warstwy poza liczba warstw\n");
+		return liczba_kubelkow_na_warstwe * (idx_warstwy + 1);
+	}
+
+	ID_K przeskok_warstw(ID_K ile_przeskoczyc){
+		ASSERT_Z_ERROR_MSG(ile_przeskoczyc < liczba_warstw, "przeskok poza liczba warstw????\n");
+		return liczba_kubelkow_na_warstwe * ile_przeskoczyc;
+	}
+};
+
 struct graf {
 	// nie grzebaæ w modyfikowaæ tych pól
 	std::vector<grafowe::wierzcholek> wierzcholki;
@@ -354,6 +378,35 @@ struct graf {
 		ASSERT_Z_ERROR_MSG(tensorowy.czy_gotowy(), "Tensorowy nie jest gotowy ?!?!?!?\n");
 		return tensorowy;
 
+	}
+
+	std::pair<graf, indekser_warstwowy> warstwowy(ID_K liczba_warstw) const {
+		graf warstwowy(liczba_wierzcholkow());
+
+		for(ID_W i = 0; i < liczba_wierzcholkow(); i++){
+			const grafowe::wierzcholek& W = wierzcholki[i];
+
+			warstwowy.zdefiniuj_liczbe_polaczen(i, W.liczba_polaczen() * (ID_W)liczba_warstw);
+			warstwowy.update_opis(i, W.opis);
+		}
+
+		// tylko dla grafow o tej samej liczbie kube³ków wszêdzie
+		indekser_warstwowy indekser(liczba_warstw, wierzcholki[0].liczba_polaczen());
+
+		for (ID_W i = 0; i < liczba_krawedzi(); i++) {
+			const grafowe::krawedz& K = krawedzie[i];
+
+			for(ID_K warstwa = 0; warstwa < liczba_warstw; warstwa++){
+				warstwowy.dodaj_krawedz(
+					K.index_wierzcholka_z, K.index_kubelka_z + indekser.przeskok_warstw(warstwa), 
+					K.index_wierzcholka_do, K.index_kubelka_do + indekser.przeskok_warstw(warstwa)
+				);
+			}
+		}
+
+		ASSERT_Z_ERROR_MSG(warstwowy.czy_gotowy(), "Warstwowy nie jest gotowy ?!?!?!?\n");
+	
+		return std::pair<graf, indekser_warstwowy>(warstwowy, indekser);
 	}
 
 	bool czy_gotowy() const{

@@ -47,7 +47,7 @@ void iteruj_spacer(spacer_benchowany spacer, rezultat_benchu_2& rezultat,
         spacer.zbuduj_na_cuda();
 
     CZAS_START
-        proste_iteracje_na_gpu(
+        podzielone_iteracje_na_gpu(
             spacer, FP_JEDEN, liczba_iteracji,
             ile_prac_na_watek, ile_watkow_na_blok_max,
             liczba_iteracji + 1);

@@ -30,6 +30,12 @@ struct transformata_macierz_dyskretna_kwantowa : transformata_macierz<zesp> {
 	transformata_macierz_dyskretna_kwantowa(transformata_macierz<zesp> M)
 		: transformata_macierz<zesp>(M) {}
 
+	__HD__ void transformuj_proste(const zesp* przed, zesp* po, uint8_t index_w_wierzcholku) {
+		zesp* wiersz_macierzy = &(this->operator()(index_w_wierzcholku, 0));
+		zesp suma = dot(wiersz_macierzy, przed, arrnosc);
+		po[index_w_wierzcholku] = suma;
+	}
+
 	__HD__ void transformuj(spacer::dane_trwale<TMDQ>& trwale, const spacer::wierzcholek& wierzcholek,
 		spacer::dane_iteracji<zesp>& iteracja_z, spacer::dane_iteracji<zesp>& iteracja_do, uint64_t index_w_wierzcholku, uint64_t)
 	{
@@ -43,7 +49,7 @@ struct transformata_macierz_dyskretna_kwantowa : transformata_macierz<zesp> {
 typedef transformata_macierz_dyskretna_kwantowa TMDQ;
 
 
-constexpr fp_t dt = fp_t(0.01);
+constexpr fp_t dt = fp_t(0.1);
 
 struct transformata_macierz_ciagla_kwantowa : transformata_macierz<zesp> {
 	typedef transformata_macierz_ciagla_kwantowa TMCQ;
@@ -78,3 +84,43 @@ struct transformata_macierz_ciagla_kwantowa : transformata_macierz<zesp> {
 };
 
 typedef transformata_macierz_ciagla_kwantowa TMCQ;
+
+struct transformata_macierz_schrodingerowata_kwantowa : transformata_macierz<zesp> {
+	typedef transformata_macierz_schrodingerowata_kwantowa TMSQ;
+
+	// const
+	zesp schrodinger = zesp(0.0, -1.0) * dt;
+
+	transformata_macierz_schrodingerowata_kwantowa(transformata_macierz<zesp> M)
+		: transformata_macierz<zesp>(M) {
+		ile_watkow = 1;
+	}
+
+	__HD__ void transformuj_proste(const zesp* przed, zesp* po, uint8_t index_w_wierzcholku) {
+		ASSERT_Z_ERROR_MSG(index_w_wierzcholku == 0, "Mial byc 1 watek\n");
+
+		for(uint8_t k = 0; k < arrnosc; k++){
+			zesp* wiersz_macierzy = &(this->operator()(k, 0));
+			zesp suma = dot(wiersz_macierzy, przed, arrnosc);
+			po[k] = przed[k] + suma * schrodinger;
+		}
+
+		prob_t suma_P_przed = FP_ZERO;
+		for (uint8_t k = 0; k < arrnosc; k++) {
+			suma_P_przed += P(przed[k]);
+		}
+
+		prob_t suma_P_po = FP_ZERO;
+		for (uint8_t k = 0; k < arrnosc; k++) {
+			suma_P_po += P(po[k]);
+		}
+
+		prob_t norma = NORMA_stabilna(suma_P_po, suma_P_przed, zesp());
+		for(uint8_t k = 0; k < arrnosc; k++){
+			po[k] *= norma;
+		}
+		
+	}
+};
+
+typedef transformata_macierz_schrodingerowata_kwantowa TMSQ;

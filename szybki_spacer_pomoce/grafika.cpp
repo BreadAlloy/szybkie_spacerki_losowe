@@ -84,8 +84,6 @@ template __host__ grafika* grafika_P_dla_kraty_2D(spacer_losowy<zesp, TMDQ>& spa
 template __host__ grafika* grafika_P_dla_kraty_2D(spacer_losowy<zesp, TMCQ>& spacer,
 				 spacer::dane_iteracji<zesp>& iteracja, uint32_t width, uint32_t height, prob_t* suma_ptr);
 
-
-
 template <typename towar, typename transformata>
 __host__ void plot_grafike_dla_kraty_2D(spacer_losowy<towar, transformata>& spacer, uint64_t pokazywana_grafika, graf& przestrzen, grafika* G, uint32_t width, uint32_t height, float skala_obrazu, std::string nazwa_wykresu){
 	// Nie sprawdza czy grafika nale¿y do tej iteracji
@@ -397,6 +395,7 @@ __host__ void plot_spacer_dla_kraty_2D(spacer_losowy<towar, transformata>& space
 
 template __host__ void plot_spacer_dla_kraty_2D(spacer_losowy<zesp, TMCQ>& spacer, uint64_t pokazywana_grafika, graf& przestrzen, grafika* G, uint32_t width, uint32_t height, float skala_obrazu, std::string nazwa_wykresu);
 template __host__ void plot_spacer_dla_kraty_2D(spacer_losowy<zesp, TMDQ>& spacer, uint64_t pokazywana_grafika, graf& przestrzen, grafika* G, uint32_t width, uint32_t height, float skala_obrazu, std::string nazwa_wykresu);
+template __host__ void plot_spacer_dla_kraty_2D(spacer_losowy<zesp, TMSQ>& spacer, uint64_t pokazywana_grafika, graf& przestrzen, grafika* G, uint32_t width, uint32_t height, float skala_obrazu, std::string nazwa_wykresu);
 
 kolor_vec kolory_kierunkow[4] = {
 	kolor_vec(108.0f / 255.0f, 255.0f / 255.0f, 66.0f  / 255.0f),
@@ -467,6 +466,59 @@ template __host__ grafika* grafika_P_kierunkow_dla_kraty_2D(spacer_losowy<zesp, 
 template __host__ grafika* grafika_P_kierunkow_dla_kraty_2D(spacer_losowy<zesp, TMDQ>& spacer, spacer::dane_iteracji<zesp>& iteracja, uint32_t width, uint32_t height, prob_t* suma_ptr, float wzmocnienie, bool kasuj_data);
 template __host__ grafika* grafika_P_kierunkow_dla_kraty_2D(spacer_losowy<zesp, TMDQ>& spacer, statyczny_wektor<zesp>& wartosci, uint32_t width, uint32_t height, prob_t* suma_ptr, float wzmocnienie, bool kasuj_data);
 template __host__ grafika* grafika_P_kierunkow_dla_kraty_2D(spacer_losowy<zesp, TMDQ>& spacer, statyczny_wektor<fp_t>& wartosci, uint32_t width, uint32_t height, prob_t* suma_ptr, float wzmocnienie, bool kasuj_data);
+
+template <typename towar, typename transformata, typename typ_wartosci>
+__host__ grafika* grafika_P_kierunkow_dla_warstwy_kraty_2D(spacer_losowy<towar, transformata>& spacer, statyczny_wektor<typ_wartosci>& wartosci, uint32_t width, uint32_t height, uint8_t warstwa_idx, indekser_warstwowy indekser, prob_t* suma_ptr, float wzmocnienie, bool kasuj_data) {
+	// nie sprawdzam czy iteracja nale¿y do spaceru.
+	// potem trzeba zrobic delete grafika*
+
+	grafika* G = new grafika(width, height);
+	prob_t max = FP_ZERO;
+	prob_t prawdopodobienstwo_suma = FP_ZERO;
+
+	for (uint64_t j = 0; j < spacer.trwale.liczba_wierzcholkow(); j++) {
+		prob_t prawdopodobienstwo = FP_ZERO;
+		spacer::wierzcholek& wierzcholek = spacer.trwale.wierzcholki[j];
+
+		for (uint8_t k = indekser.start_warstwy(warstwa_idx); k < indekser.nastepna_warstwa(warstwa_idx); k++) {
+			prawdopodobienstwo += P(wartosci[wierzcholek.start_wartosci + k]);
+		}
+
+		prawdopodobienstwo_suma += prawdopodobienstwo;
+		max = MAX(max, prawdopodobienstwo);
+	}
+
+	float normalizator = (float)(255.0 / max) * wzmocnienie;
+	for (uint64_t j = 0; j < spacer.trwale.liczba_wierzcholkow(); j++) {
+		spacer::wierzcholek& wierzcholek = spacer.trwale.wierzcholki[j];
+
+		kolor_vec kolor(0.0f, 0.0f, 0.0f);
+		for (uint8_t k = 0; k < indekser.liczba_kubelkow_na_warstwe; k++) {
+			kolor += normalizator * (float)P(wartosci[wierzcholek.start_wartosci + indekser.start_warstwy(warstwa_idx) + k]) * kolory_kierunkow[k];
+		}
+
+		float odciecie_gora = 0.0f;
+		odciecie_gora = MAX(odciecie_gora, kolor.r);
+		odciecie_gora = MAX(odciecie_gora, kolor.g);
+		odciecie_gora = MAX(odciecie_gora, kolor.b);
+
+		if (odciecie_gora > 255.0f) {
+			kolor = kolor * (255.0f / odciecie_gora);
+		}
+
+		(G->data)[4 * j + 0] = (uint8_t)kolor.r;  // R
+		(G->data)[4 * j + 1] = (uint8_t)kolor.g;  // G
+		(G->data)[4 * j + 2] = (uint8_t)kolor.b;  // B
+		(G->data)[4 * j + 3] = (uint8_t)0xFF;
+	}
+
+	if (suma_ptr != nullptr) *suma_ptr = prawdopodobienstwo_suma;
+	G->LoadTextureFromMemory(kasuj_data);
+	return G;
+}
+
+template __host__ grafika* grafika_P_kierunkow_dla_warstwy_kraty_2D(spacer_losowy<zesp, TMDQ>& spacer, statyczny_wektor<zesp>& wartosci, uint32_t width, uint32_t height, uint8_t warstwa_idx, indekser_warstwowy indekser, prob_t* suma_ptr, float wzmocnienie, bool kasuj_data);
+template __host__ grafika* grafika_P_kierunkow_dla_warstwy_kraty_2D(spacer_losowy<zesp, TMSQ>& spacer, statyczny_wektor<zesp>& wartosci, uint32_t width, uint32_t height, uint8_t warstwa_idx, indekser_warstwowy indekser, prob_t* suma_ptr, float wzmocnienie, bool kasuj_data);
 
 kolor_vec kolory_pozycji[2] = {
 	kolor_vec(255.0f / 255.0f, 199.0f / 255.0f, 0.0f / 255.0f),

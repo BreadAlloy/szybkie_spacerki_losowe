@@ -169,3 +169,7 @@ __host__ grafika* grafika_P_kierunkow_dla_kraty_2D(spacer_losowy<towar, transfor
 
 template <typename towar, typename transformata, typename typ_wartosci>
 __host__ grafika* grafika_P_pozycji_2_krata_2D(spacer_losowy<towar, transformata>& spacer, statyczny_wektor<typ_wartosci>& wartosci1, statyczny_wektor<typ_wartosci>& wartosci2, uint32_t width, uint32_t height, float wzmocnienie = 1.0f, bool kasuj_data = true);
+
+template <typename towar, typename transformata, typename typ_wartosci>
+__host__ grafika* grafika_P_kierunkow_dla_warstwy_kraty_2D(spacer_losowy<towar, transformata>& spacer, statyczny_wektor<typ_wartosci>& wartosci, uint32_t width, uint32_t height, uint8_t warstwa_idx, indekser_warstwowy indekser, prob_t* suma_ptr = nullptr, float wzmocnienie = 1.0f, bool kasuj_data = true);
+

@@ -17,6 +17,8 @@
 
 #include "spojrzenie_2_czastki.h"
 
+#include "spojrzenie_warstwy.h"
+
 //#include "alg_liniowa.h"
 
 //#include "zadanie.h"
@@ -58,7 +60,8 @@ int main(int argc, char** argv)
     //test_absorbcji TA;
     //zabawy_dowolne ZD;
 
-    spojrzenie_2_czastki::przegladacz_instancji S2CLQ;
+    //spojrzenie_2_czastki::przegladacz_instancji S2CLQ;
+    spojrzenie_warstwy::przegladacz_instancji SW2D;
 
     //test_funkcji_tworzacych_grafy();
     //test_ortonormalizacji();
@@ -99,7 +102,8 @@ int main(int argc, char** argv)
         //przegladacz.pokaz_okno();
         //zderzenie.pokaz_okno();
         //ZD.pokaz_okno(*io);
-        S2CLQ.tick();
+        //S2CLQ.tick();
+        SW2D.tick();
 
         //processInput(window); // z grafiki
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // czesciowo z grafiki

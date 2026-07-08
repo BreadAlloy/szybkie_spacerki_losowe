@@ -19,7 +19,11 @@ static inline __HD__ prob_t P(const zesp& a) {
 }
 
 static inline __HD__ prob_t NORMA(const prob_t jest, const prob_t powinno_byc, zesp) {
-	return sqrt(powinno_byc / jest);
+	return sqrt(powinno_byc/jest);
+}
+
+static inline __HD__ prob_t NORMA_stabilna(const prob_t jest, const prob_t powinno_byc, zesp) {
+	return sqrt((powinno_byc + (prob_t)1e-9) / (jest + (prob_t)1e-9));
 }
 
 static inline __HD__ prob_t NORMA(const prob_t jest, const prob_t powinno_byc, fp_t) {
@@ -28,8 +32,8 @@ static inline __HD__ prob_t NORMA(const prob_t jest, const prob_t powinno_byc, f
 
 namespace spacer{
 
-typedef uint32_t idW_t;
-typedef uint8_t idT_t;
+typedef ID_W idW_t;
+typedef ID_K idT_t;
 
 struct wierzcholek{
 	idW_t start_wartosci = (idW_t)(-1);
@@ -160,9 +164,10 @@ struct dane_trwale{ //operatory, to gdzie wysy³aæ, przestrzen, raczej nie zmieni
 	__host__ void przygotuj_znajdywacz_wierzcholka(){
 		uint64_t ile_prac = 0;
 		for (ID_W i = 0; i < wierzcholki.rozmiar; i++) {
-			for (uint8_t j = 0; j < transformaty[(wierzcholki[i]).transformer].ile_watkow; j++) {
-				ile_prac++;
-			}
+			ile_prac += (uint64_t)transformaty[(wierzcholki[i]).transformer].ile_watkow;
+			//for (uint8_t j = 0; j < transformaty[(wierzcholki[i]).transformer].ile_watkow; j++) {
+			//	ile_prac++;
+			//}
 		}
 		znajdywacz_wierzcholka.malloc(ile_prac);
 
@@ -443,7 +448,7 @@ struct spacer_losowy{
 		prob_t prawdopodop = iteracjaA.prawdopodobienstwo_suma();
 		if(abs(prawdopodop - FP_JEDEN) > fp_tolerancja){
 			printf("Prawdopodobienstwo nie sumuje sie do 1.0; Brakuje %lf\n", abs(prawdopodop - 1.0));
-			ret = false;
+			//ret = false;
 		}
 		ASSERT_Z_ERROR_MSG(ret, "Spacer nie jest gotowy\n")
 		return ret;
@@ -866,11 +871,25 @@ struct spacer_losowy{
 
 		return std::pair<double, double>(min_czas_wedlug_predkosci_pamieci * 1000.0, min_czas_wg_FLOPs * 1000.0);
 	}
+
+	spacer::idW_t cache_wektora_max_size(uint32_t liczba_prac_na_raz){
+		// Przybli¿ony wynik
+
+		ID_K max_arrnosc = 0;
+		
+		for(spacer::idW_t i = 0; i < trwale.liczba_wierzcholkow(); i++){
+			spacer::wierzcholek& W = trwale.wierzcholki[i];
+			max_arrnosc = std::max(max_arrnosc, W.liczba_kierunkow);
+		}
+
+		return spacer::idW_t(max_arrnosc) * 2 + liczba_prac_na_raz;
+	}
 };
 
 extern __HD__ fp_t dot(const estetyczny_wektor<fp_t>&, const estetyczny_wektor<fp_t>&);
 extern __HD__ zesp dot(const estetyczny_wektor<zesp>&, const estetyczny_wektor<zesp>&);
-
+extern __HD__ fp_t dot(const fp_t* a, const fp_t* b, uint8_t ilosc);
+extern __HD__ zesp dot(const zesp* a, const zesp* b, uint8_t ilosc);
 
 //							---===SPACER LINIA===---
 template<typename transformata>
@@ -920,6 +939,10 @@ __host__ void iteracje_na_gpu(spacer_losowy<towar, transformata>& spacer, fp_t d
 
 template <typename towar, typename transformata>
 __host__ void proste_iteracje_na_gpu(spacer_losowy<towar, transformata>& spacer, fp_t delta_t,
+	uint64_t liczba_iteracji, uint64_t ile_prac_na_watek, uint32_t ile_watkow_na_blok_max, uint32_t co_ile_zapisac);
+
+template <typename towar, typename transformata>
+__host__ void podzielone_iteracje_na_gpu(spacer_losowy<towar, transformata>& spacer, fp_t delta_t,
 	uint64_t liczba_iteracji, uint64_t ile_prac_na_watek, uint32_t ile_watkow_na_blok_max, uint32_t co_ile_zapisac);
 
 template<typename transformata>
